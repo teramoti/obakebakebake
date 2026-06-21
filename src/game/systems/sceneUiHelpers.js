@@ -1,3 +1,7 @@
+/**
+ * Phaser Scene上で使う小さなUI描画関数群です。
+ * 文字、パネル、ボタンなどの共通処理をまとめ、Renderer側の記述を短くします。
+ */
 import { BOARD } from '../data/gameConfig.js';
 
 export const PANEL = 0x10152d;

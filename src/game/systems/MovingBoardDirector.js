@@ -1,3 +1,7 @@
+/**
+ * 動くボーナス門や追跡系ギミックの状態を管理するDirectorです。
+ * クリア不能を作らないよう、必須条件ではなく任意ボーナスとして扱います。
+ */
 import { traceBeam } from './beamSystem.js';
 
 const keyOf = (cell) => `${cell.x},${cell.y}`;

@@ -1,3 +1,7 @@
+/**
+ * Phaser側Result画面を描画するRendererです。
+ * React Result連携前のゲーム内Result表示や、タイトルへ戻る操作を担当します。
+ */
 import Phaser from 'phaser';
 import { PLAYER_COLORS, PLAYER_NAMES } from '../data/gameConfig.js';
 import { GOLD, MUTED, PANEL, PINK, formatScore } from './sceneUiHelpers.js';
@@ -6,10 +10,12 @@ import { GOLD, MUTED, PANEL, PINK, formatScore } from './sceneUiHelpers.js';
  * ResultScreenRenderer owns final ranking and bonus presentation.
  */
 export default class ResultScreenRenderer {
+  // Result描画に必要なScene状態を保持します。
   constructor(scene) {
     this.scene = scene;
   }
 
+  // 順位、点数、クリア数、BONUSをゲーム内Resultとして表示します。
   showResult() { showResult.call(this.scene); }
 }
 

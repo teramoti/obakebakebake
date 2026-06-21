@@ -1,3 +1,7 @@
+/**
+ * ステージをプレイヤー・ラウンドごとにREMIXする処理です。
+ * 観戦した解法をそのまま真似しづらくするため、反転や回転を安全な範囲で適用します。
+ */
 import { GRID_SIZE } from '../data/stages.js';
 import { traceBeam } from './beamSystem.js';
 

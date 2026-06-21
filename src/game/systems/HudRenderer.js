@@ -1,3 +1,7 @@
+/**
+ * プレイ中HUDを描画するRendererです。
+ * プレイヤー、時間、得点、残り回数、小さなボーナス表示などを盤面外に整理して表示します。
+ */
 import Phaser from 'phaser';
 import { HOW_TO_PAGES } from '../data/howToGuide.js';
 import { PLAYER_COLORS, PLAYER_NAMES } from '../data/gameConfig.js';
@@ -7,15 +11,22 @@ import { CYAN, GOLD, MUTED, formatScore } from './sceneUiHelpers.js';
  * HudRenderer owns live HUD, score pops and in-game help pages.
  */
 export default class HudRenderer {
+  // HUD描画に必要なScene状態とUI部品を保持します。
   constructor(scene) {
     this.scene = scene;
   }
 
+  // 左上のプレイヤー・時間・点数・MOVEなど、プレイ中の主要情報を描画します。
   drawHud() { drawHud.call(this.scene); }
+  // 右下に小さく出すボーナス/危険/水晶などの状況チップを描画します。
   drawGimmickBadges() { drawGimmickBadges.call(this.scene); }
+  // クリック後の短いリアクション文言を一時表示します。
   drawReactionBanner() { drawReactionBanner.call(this.scene); }
+  // クリック地点に出る回転・コンボ・ボーナスなどのポップ表示を描画します。
   drawScorePops() { drawScorePops.call(this.scene); }
+  // Hキーで表示するゲーム内ヘルプを描画します。
   drawHelpOverlay() { drawHelpOverlay.call(this.scene); }
+  // ヘルプページ番号を左右キーで切り替えます。
   changeHelpPage(delta) { changeHelpPage.call(this.scene, delta); }
 }
 
@@ -27,23 +38,72 @@ function drawHud(){
     const feverWindow = Math.min(8, Math.floor(this.stageSeconds * 0.42));
     const fever = this.remaining <= feverWindow;
 
-    // Keep the live HUD compact and close to the board. Stage names are hidden so
-    // the play field, timer, and move count stay visually dominant.
-    this.ui.panel(38, 24, 604, 70, { fill: 0x080b1e, alpha: 0.9, line: fever ? 0xffe66d : 0x6ee7ff, lineAlpha: 0.58, radius: 18 });
-    this.add.text(62, 38, playerName, { fontFamily: 'Arial Black', fontSize: 31, color: playerColor, stroke: '#050718', strokeThickness: 6 });
-    this.add.text(128, 42, `${formatScore(currentPlayer.totalScore)}点`, { fontFamily: 'Arial Black', fontSize: 21, color: '#ffffff' });
-    this.add.text(236, 36, `R${this.roundIndex + 1}/${this.roundCount}`, { fontFamily: 'Arial Black', fontSize: 25, color: GOLD });
-    this.add.text(342, 32, `${Math.ceil(this.remaining)}秒`, { fontFamily: 'Arial Black', fontSize: 38, color: fever ? GOLD : '#ffffff', stroke: '#050718', strokeThickness: 7 }).setOrigin(0, 0);
-    this.add.text(500, 42, `回数 ${movesLeft}/${this.maxMoves}`, { fontFamily: 'Arial Black', fontSize: 21, color: movesLeft <= 2 ? GOLD : MUTED });
+    // ステージ名は隠し、盤面上にHUDを重ねないため、主要情報は右側の専用パネルへ寄せます。
+    // FEVERと回数が近すぎて重なったため、行を分けて安全領域内に収めます。
+    const x = 842;
+    const y = 30;
+    const width = 380;
+    const height = 176;
+    this.ui.panel(x, y, width, height, {
+      fill: 0x080b1e,
+      alpha: 0.9,
+      line: fever ? 0xffe66d : 0x6ee7ff,
+      lineAlpha: 0.62,
+      radius: 20,
+    });
+
+    this.add.text(x + 26, y + 24, playerName, {
+      fontFamily: 'Arial Black',
+      fontSize: 35,
+      color: playerColor,
+      stroke: '#050718',
+      strokeThickness: 6,
+    });
+    this.add.text(x + 116, y + 31, `${formatScore(currentPlayer.totalScore)}点`, {
+      fontFamily: 'Arial Black',
+      fontSize: 22,
+      color: '#ffffff',
+    });
+    this.add.text(x + 250, y + 30, `R${this.roundIndex + 1}/${this.roundCount}`, {
+      fontFamily: 'Arial Black',
+      fontSize: 25,
+      color: GOLD,
+    });
+
+    this.add.text(x + 34, y + 86, `${Math.ceil(this.remaining)}秒`, {
+      fontFamily: 'Arial Black',
+      fontSize: 42,
+      color: fever ? GOLD : '#ffffff',
+      stroke: '#050718',
+      strokeThickness: 7,
+    });
+    this.add.text(x + 206, y + 91, `回数 ${movesLeft}/${this.maxMoves}`, {
+      fontFamily: 'Arial Black',
+      fontSize: 23,
+      color: movesLeft <= 2 ? GOLD : MUTED,
+    });
+
     if ((this.currentResult?.requiredEmitters ?? 1) > 1) {
-      this.add.text(500, 66, `色 ${this.currentResult.matchedEmitters}/${this.currentResult.requiredEmitters}`, { fontFamily: 'Arial Black', fontSize: 16, color: CYAN });
+      this.add.text(x + 208, y + 122, `色 ${this.currentResult.matchedEmitters}/${this.currentResult.requiredEmitters}`, {
+        fontFamily: 'Arial Black',
+        fontSize: 18,
+        color: CYAN,
+      });
     }
 
     const progressG = this.add.graphics();
-    progressG.fillStyle(0x182147, 0.92).fillRoundedRect(130, 80, 458, 8, 4);
-    progressG.fillStyle(fever ? 0xffe66d : 0x6ee7ff, 0.96).fillRoundedRect(130, 80, 458 * Math.max(0, this.remaining / this.stageSeconds), 8, 4);
+    progressG.fillStyle(0x182147, 0.92).fillRoundedRect(x + 30, y + 148, width - 60, 10, 5);
+    progressG.fillStyle(fever ? 0xffe66d : 0x6ee7ff, 0.96).fillRoundedRect(x + 30, y + 148, (width - 60) * Math.max(0, this.remaining / this.stageSeconds), 10, 5);
+
     if (fever) {
-      this.add.text(602, 47, 'FEVER', { fontFamily: 'Arial Black', fontSize: 15, color: GOLD, stroke: '#050718', strokeThickness: 4 }).setOrigin(0.5);
+      this.ui.pill(x + 282, y + 70, 'FEVER', {
+        bg: 0xffe66d,
+        fg: '#061022',
+        width: 92,
+        height: 30,
+        fontSize: 15,
+        line: 0xffffff,
+      });
     }
   }
 
@@ -64,7 +124,7 @@ function drawGimmickBadges(){
     }
     badges = [...boardBadges, ...twistBadges, ...badges].slice(0, 4);
 
-    // Small bottom-right chips: these are hints, not the main game view.
+    // 右下の小チップは補足情報です。盤面より目立たないサイズに抑えます。
     badges.forEach((badge, index) => {
       const x = 760 + (index % 2) * 210;
       const y = 548 + Math.floor(index / 2) * 54;

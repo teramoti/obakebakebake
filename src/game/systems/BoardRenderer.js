@@ -1,3 +1,7 @@
+/**
+ * 盤面の描画を担当するRendererです。
+ * セル、鏡、ライト、ゴール、光線、ボーナス表示など、ゲーム中に見える盤面要素を描きます。
+ */
 import { BOARD } from '../data/gameConfig.js';
 import { CYAN, PINK, cellCenter, rectCell } from './sceneUiHelpers.js';
 import { LIGHT_COLOR_HEX } from './ColorPuzzleDirector.js';
@@ -7,9 +11,10 @@ import { LIGHT_COLOR_HEX } from './ColorPuzzleDirector.js';
  * MirrorPartyScene keeps progression logic and calls this class for visuals.
  */
 export default class BoardRenderer {
+  // Sceneの状態を参照して盤面を描くため、Phaser Sceneを保持します。
   constructor(scene) {
     this.scene = scene;
-    // Legacy drawBoard internals call these helpers through the scene object.
+    // 既存の盤面描画処理がScene経由で呼ぶため、互換用にSceneへ補助関数を渡します。
     this.scene.drawIconObject = drawIconObject.bind(scene);
     this.scene.drawCrystal = drawCrystal.bind(scene);
     this.scene.drawGhost = drawGhost.bind(scene);
@@ -24,10 +29,12 @@ export default class BoardRenderer {
     this.scene.drawSplitter = drawSplitter.bind(scene);
   }
 
+  // セル、鏡、ライト、ゴール、ギミック、光線をまとめて描画します。
   drawBoard() {
     drawBoard.call(this.scene);
   }
 
+  // traceBeamの線分を色ごとに光線として描画します。
   drawBeam() {
     drawBeam.call(this.scene);
   }

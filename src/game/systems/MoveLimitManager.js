@@ -1,8 +1,9 @@
 /**
- * MoveLimitManager converts each stage's par value into a visible move limit.
- * Each mirror rotation consumes 1 move, and the turn ends when moves reach 0.
+ * 各ターンの回転回数上限を管理するクラスです。
+ * 時間制限だけでなくMOVE制限を入れることで、短時間で考えるパズル性を作ります。
  */
 export default class MoveLimitManager {
+  // 難易度ごとの基本MOVE補正を保持します。
   constructor(difficultyId) {
     this.difficultyId = difficultyId;
   }

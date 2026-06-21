@@ -1,3 +1,7 @@
+/**
+ * プレイ中に変化する小さなボーナス目標を管理するクラスです。
+ * 操作を増やさず、盤面上の狙いどころを作るために使用します。
+ */
 const CELL_KEY = (cell) => `${cell.x},${cell.y}`;
 const getBoard = (stage) => stage?.board ?? { cols: 8, rows: 8 };
 

@@ -1,7 +1,6 @@
 /**
- * ArcadeUiKit centralizes the Phaser-only UI drawing helpers.
- * Keeping panels, chips, and button-like labels here prevents the Scene from
- * duplicating low-level graphics code every time the UI is refreshed.
+ * Phaser UIの共通描画ヘルパーです。
+ * パネル、ラベル、見出しなどを同じ見た目で描くための低レベル描画をまとめます。
  */
 export default class ArcadeUiKit {
   constructor(scene) {

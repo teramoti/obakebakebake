@@ -1,3 +1,7 @@
+/**
+ * タイトル、人数、難易度、時間、遊び方を表示する開始画面です。
+ * GameManagerの設定を購読し、React側の設定変更をゲーム開始時のGameSettingsへ反映します。
+ */
 import { useState, useSyncExternalStore, type CSSProperties } from 'react'
 import Icon from '../../components/Icon'
 import { DIFFICULTY_SETTINGS, TIME_OPTIONS } from '../../../game/data/gameConfig.js'
@@ -20,6 +24,7 @@ type Props = {
 
 const difficultyList = Object.values(DIFFICULTY_SETTINGS) as DifficultyItem[]
 
+// 表示幅を守るため、長い難易度名だけ短縮します。
 const compactModeLabel = (id: string, label: string) => {
   if (id === 'normal') return 'NORM'
   return label
@@ -38,6 +43,7 @@ const scoreDemoItems = [
   ['ghost', '回避', '+1'],
 ]
 
+// 動画風ヘルプ内の小さな盤面セルを描画します。
 function DemoCell({ type, highlight = false }: { type: string; highlight?: boolean }) {
   return (
     <div className={highlight ? 'demo-cell highlight' : 'demo-cell'}>
@@ -46,6 +52,7 @@ function DemoCell({ type, highlight = false }: { type: string; highlight?: boole
   )
 }
 
+// タイトル画面でゲーム内容が伝わるよう、ミニ盤面デモを表示します。
 function TitleAttractPreview({ settings }: { settings: GameSettings }) {
   const difficulty = DIFFICULTY_SETTINGS[settings.difficulty] ?? DIFFICULTY_SETTINGS.normal
 
@@ -77,6 +84,7 @@ function TitleAttractPreview({ settings }: { settings: GameSettings }) {
   )
 }
 
+// 遊び方ページごとに、光の流れ・クリック・点数を動きで見せます。
 function HowToDemo({ pageNumber }: { pageNumber: number }) {
   if (pageNumber === 3) {
     return (
@@ -114,6 +122,7 @@ function HowToDemo({ pageNumber }: { pageNumber: number }) {
   )
 }
 
+// プレイヤーが遊び方画面内で鏡クリックを試せる練習盤面です。
 function PracticeBoard() {
   const [mirror, setMirror] = useState('mirror-slash')
   const isClear = mirror === 'mirror-backslash'
@@ -141,6 +150,7 @@ function PracticeBoard() {
   )
 }
 
+// 3ページ式の遊び方モーダルです。説明文より動く見本を優先します。
 function HowToModal({ onClose }: { onClose: () => void }) {
   const [pageIndex, setPageIndex] = useState(0)
   const page = HOW_TO_PAGES[pageIndex]
@@ -217,10 +227,12 @@ function HowToModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// GameManagerの設定を読み、開始時にAppへ設定を渡します。
 export default function StartScreen({ onStart }: Props) {
   const settings = useSyncExternalStore(subscribeGameSettings, getGameSettings, getGameSettings)
   const [showHowTo, setShowHowTo] = useState(false)
 
+  // 人数・難易度・時間をGameManagerへ集約して保存します。
   const applySettings = (partialSettings: Partial<GameSettings>) => {
     setGameSettings({ ...settings, ...partialSettings })
   }

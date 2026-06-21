@@ -1,5 +1,6 @@
 /* ResultScreen specific React result styles live below. */
 .result-shell {
+  display: flex;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at 50% 12%, rgba(255, 230, 109, 0.26), transparent 34%), #070818;

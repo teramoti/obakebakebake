@@ -1,3 +1,7 @@
+/**
+ * ラウンド、プレイヤー順、ステージ選択を管理するクラスです。
+ * 3ラウンド固定、プレイヤー交代、難易度別ステージ選択をSceneから切り離します。
+ */
 import { pickRandom, shuffle } from './random.js';
 import { createRoundStageAssignments } from './stageRemix.js';
 
@@ -7,6 +11,7 @@ import { createRoundStageAssignments } from './stageRemix.js';
  * directly editing roundIndex/orderIndex everywhere.
  */
 export default class TurnManager {
+  // ラウンドごとのプレイヤー順、ステージ割当、イベントをまとめて決定します。
   constructor({ stages, stagePool, roundEvents, roundCount, playerCount, boardConfig }) {
     this.playerCount = playerCount;
     this.roundCount = roundCount;

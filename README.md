@@ -73,3 +73,19 @@ npm run build
 - 追加ライト用の鏡ルートを生成し、解法では全ライトが同色ゴールへ届くように修正
 - 初期状態で即CLEARにならないことを強化チェックに追加
 - 追加ライト・追加ゴールが盤面外に出ないことをチェック
+
+## ソースコメント整備
+- `src/` と `scripts/` の主要ソースにファイル責務コメントを追加しました。
+- `GameManager.ts`、`MirrorPartyScene.js`、Renderer / Manager / Director 系に処理意図コメントを追加しました。
+- `npm run test:quality` で `commentedSourceFiles` を出力し、ソース冒頭コメントの存在を確認します。
+
+
+[コメント見直し]
+- 先輩向けの文言を削除し、ファイル責務・連携先・ゲーム内での意図が分かるコメントへ整理しました。
+- 自動品質チェックで「先輩」などの相手依存コメントが残らないことを確認します。
+
+
+## UI安全領域修正
+- Game画面の時間・回数・FEVER表示を右側HUDへ分離し、重なりにくい配置へ修正。
+- React Result画面の `.result-shell` に `display: flex` を追加し、中央寄せ指定が効くよう修正。
+- `scripts/quality-check.js` にHUD分離とResult中央寄せの再発防止チェックを追加。

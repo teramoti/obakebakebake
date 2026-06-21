@@ -1,3 +1,7 @@
+/**
+ * resources配下の画像・音声ファイルへのURLを生成するファイルです。
+ * publicフォルダを使わない構成のため、ReactとPhaserの参照先をここに集約します。
+ */
 const iconModules = import.meta.glob('../../../resources/icons/*.png', {
   eager: true,
   query: '?url',

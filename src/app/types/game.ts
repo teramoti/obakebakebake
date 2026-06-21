@@ -1,3 +1,7 @@
+/**
+ * React画面、GameManager、Phaser Sceneの間で共有する型定義です。
+ * 設定値とResultの形をここに寄せ、外部連携時のデータ構造を確認しやすくします。
+ */
 export type DifficultyId = 'easy' | 'normal' | 'hard'
 
 export type GameSettings = {

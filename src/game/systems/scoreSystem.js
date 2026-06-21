@@ -1,3 +1,7 @@
+/**
+ * 1ターン分の得点計算を担当します。
+ * CLEAR、MISSION、水晶、色ライト、ボーナス門、MOVE残数などを小さい整数点として集計します。
+ */
 export function checkMission({ stage, result, rotations, elapsed, stageSeconds, isPerfect }) {
   if (stage.missionType === 'crystals') return result.crystals >= Math.min(2, stage.crystals.length);
   if (stage.missionType === 'portal') return result.usedPortal;

@@ -1,9 +1,9 @@
 /**
- * ScoreLedger is the single place that writes turn scores into player totals.
- * Result screens read from the same player objects, so score carry-over stays
- * explicit instead of being recalculated in the renderer.
+ * 各ターンの得点をプレイヤー別に蓄積する台帳クラスです。
+ * ラウンド別点数と合計点を分けて保持し、Result連携時の情報源にします。
  */
 export default class ScoreLedger {
+  // プレイヤー配列へスコア蓄積用フィールドを作ります。
   constructor(players) {
     this.players = players;
   }

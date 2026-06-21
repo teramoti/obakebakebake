@@ -1,3 +1,7 @@
+/**
+ * 開発中に壊しやすい条件をまとめて検証する自動チェックです。
+ * ステージ解法、即CLEAR防止、Result連携、素材形式、コメント方針をまとめて確認します。
+ */
 import { STAGES, GRID_SIZE } from '../src/game/data/stages.js';
 import { BOARD_LAYOUTS, DIFFICULTY_SETTINGS, ROUND_EVENTS } from '../src/game/data/gameConfig.js';
 import { cloneMirrors, traceBeam } from '../src/game/systems/beamSystem.js';
@@ -11,12 +15,41 @@ import { createEmptyPlayer } from '../src/game/systems/scoreSystem.js';
 import LiveTwistManager from '../src/game/systems/LiveTwistManager.js';
 import MovingBoardDirector from '../src/game/systems/MovingBoardDirector.js';
 import { enhanceStageForDifficulty } from '../src/game/systems/ColorPuzzleDirector.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
+// 条件がfalseなら品質チェックを即失敗させます。
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+
+// src/scripts配下のソースファイルに、ファイル役割コメントがあるかを確認します。
+function collectSourceFiles(dirUrl) {
+  const entries = readdirSync(dirUrl, { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    const childUrl = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dirUrl);
+    if (entry.isDirectory()) return collectSourceFiles(childUrl);
+    if (!/\.(ts|tsx|js|css)$/.test(entry.name)) return [];
+    return [childUrl];
+  });
+}
+
+// 共同開発時に責務を追えるよう、全ソースに冒頭コメントを必須にします。
+function verifySourceComments() {
+  const sourceFiles = [
+    ...collectSourceFiles(new URL('../src/', import.meta.url)),
+    ...collectSourceFiles(new URL('../scripts/', import.meta.url)),
+  ];
+  sourceFiles.forEach((fileUrl) => {
+    const source = readFileSync(fileUrl, 'utf8').trimStart();
+    assert(source.startsWith('/**') || source.startsWith('/*'), `source file should start with a responsibility comment: ${fileUrl.pathname}`);
+    const reviewAudienceWord = '先' + '輩';
+    assert(!source.includes(reviewAudienceWord), `source comment should describe implementation responsibility, not review audience: ${fileUrl.pathname}`);
+  });
+  return sourceFiles.length;
+}
+
+// ステージが解けること、初期状態で即CLEARしないことを確認します。
 function verifyStage(stage, label, boardConfig = { cols: GRID_SIZE, rows: GRID_SIZE }) {
   const initial = traceBeam(stage, cloneMirrors(stage), boardConfig);
   assert(!initial.reachedGoal, `${label}: initial state should not clear immediately`);
@@ -26,6 +59,7 @@ function verifyStage(stage, label, boardConfig = { cols: GRID_SIZE, rows: GRID_S
   assert(solved.reachedGoal, `${label}: solutionType should reach goal`);
 }
 
+// ステージが解けること、初期状態で即CLEARしないことを確認します。
 function verifyStages() {
   STAGES.forEach((stage) => verifyStage(stage, stage.id));
 
@@ -42,6 +76,7 @@ function verifyStages() {
   });
 }
 
+// スコアが小さい整数範囲に収まる方針を確認します。
 function verifySimpleScoring() {
   const stage = STAGES.find((item) => item.crystals.length > 0 && item.ghosts.length > 0);
   assert(stage, 'simple scoring test requires at least one stage with crystal and ghost');
@@ -76,6 +111,7 @@ function verifySimpleScoring() {
   assert(score.score < 30, 'Small scoring should not return arcade-sized numbers');
 }
 
+// MOVE制限とResult用スコア蓄積が壊れていないか確認します。
 function verifyMoveLimitsAndLedger() {
   const stage = { ...STAGES[0], board: BOARD_LAYOUTS.normal };
   const moveLimit = new MoveLimitManager('normal');
@@ -154,6 +190,7 @@ function keyOfCell(cell) {
   return `${cell.x},${cell.y}`;
 }
 
+// 条件がfalseなら品質チェックを即失敗させます。
 function assertNoDuplicateCells(cells, label) {
   assert(new Set(cells.map(keyOfCell)).size === cells.length, `${label}: cells should not overlap`);
 }
@@ -187,6 +224,7 @@ function verifyEnhancedStageBalance(stage, difficulty, boardConfig) {
   }
 }
 
+// 色ライト、複数ゴール、固定ミラー追加後の盤面品質を確認します。
 function verifyColorPuzzleEnhancement() {
   Object.values(DIFFICULTY_SETTINGS).forEach((difficulty) => {
     const boardConfig = BOARD_LAYOUTS[difficulty.id];
@@ -206,6 +244,7 @@ function verifyColorPuzzleEnhancement() {
   assert('splitters' in enhancedHard, 'Enhanced hard stage should include splitter metadata');
 }
 
+// ラウンド数、順番、ステージ割当が要件通りか確認します。
 function verifyTurnManager() {
   Object.values(DIFFICULTY_SETTINGS).forEach((difficulty) => {
     const stagePool = STAGES.filter((stage) => difficulty.stageIds.includes(stage.id));
@@ -226,6 +265,7 @@ function verifyTurnManager() {
   });
 }
 
+// UI要件や構造要件がソース上に残っているか確認します。
 function verifyUiRefreshSource() {
   const sceneSource = readFileSync(new URL('../src/game/scenes/MirrorPartyScene.js', import.meta.url), 'utf8');
   const boardRendererSource = readFileSync(new URL('../src/game/systems/BoardRenderer.js', import.meta.url), 'utf8');
@@ -325,12 +365,12 @@ function verifyUiRefreshSource() {
   assert(!gameConfigSource.includes('showtime:'), 'Difficulty settings should be limited to easy / normal / hard');
   assert(gameConfigSource.includes('roundCount: 3'), 'Difficulties should use fixed 3 rounds');
   assert(gameConfigSource.includes('cell: 72'), 'Board cells should be larger than the previous compact layout');
-  assert(hudRendererSource.includes('Stage names are hidden'), 'HUD should intentionally hide stage names during play');
-  assert(flowRendererSource.includes('Keep the previous board on screen'), 'Player handoff should be a popup over the game board');
+  assert(hudRendererSource.includes('ステージ名は隠し'), 'HUD should intentionally hide stage names during play');
+  assert(flowRendererSource.includes('盤面を残し'), 'Player handoff should be a popup over the game board');
   assert(flowRendererSource.includes('AUTO NEXT'), 'Player handoff should auto-count down instead of waiting on a button');
   assert(flowRendererSource.includes('this.handoffAutoCall'), 'Handoff should store the auto transition timer');
   assert(!flowRendererSource.includes('targets: [panel, playerText, start], y:'), 'Turn intro should not tween player label to absolute top edge');
-  assert(flowRendererSource.includes('previous absolute y tween moved the player label'), 'Turn intro should document the safe-area player label fix');
+  assert(flowRendererSource.includes('P1/P2/P3/P4が画面上端からはみ出していました'), 'Turn intro should document the safe-area player label fix');
   assert(cssSource.includes('Safe-area fixes: turn intro player labels'), 'CSS should include HOW TO score page safe-area fixes');
 
   assert(sceneSource.split('\n').length <= 440, 'MirrorPartyScene should stay compact after renderer split');
@@ -392,6 +432,16 @@ verifyLiveTwist();
 verifyMovingBoard();
 verifyColorPuzzleEnhancement();
 verifyTurnManager();
+
+function verifyUiSafeLayout() {
+  const hud = readFileSync(new URL('../src/game/systems/HudRenderer.js', import.meta.url), 'utf8');
+  const resultCss = readFileSync(new URL('../src/app/screens/ResultScreen/ResultScreen.css', import.meta.url), 'utf8');
+  assert(hud.includes('const x = 842') && hud.includes('FEVERと回数'), 'HUD should keep timer, moves and FEVER separated on the right side');
+  assert(resultCss.includes('.result-shell') && resultCss.includes('display: flex'), 'Result shell should be flex-centered');
+}
+
+verifyUiSafeLayout();
+const commentedSourceFiles = verifySourceComments();
 verifyUiRefreshSource();
 console.log(JSON.stringify({
   status: 'ok',
@@ -401,9 +451,10 @@ console.log(JSON.stringify({
   roundEvents: ROUND_EVENTS.length,
   scoreScale: 'small-integer',
   control: 'mirror-click-rotate-only',
-  uiRefresh: 'complete-light-placement-balance',
+  uiRefresh: 'complete-game-result-safe-layout',
   assetFormat: 'png',
   devHmr: 'disabled',
   boardLayouts: Object.fromEntries(Object.entries(BOARD_LAYOUTS).map(([id, board]) => [id, `${board.cols}x${board.rows}`])),
   puzzleEnhancement: 'color-lights-goals-splitter-replay-fixed-mirror-auto-handoff',
+  commentedSourceFiles,
 }, null, 2));

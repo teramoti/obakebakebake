@@ -1,6 +1,6 @@
 /**
- * GameResultFactory converts Phaser-side player ledgers into the React/App result payload.
- * GameManager.ts passes this payload back to the host screen after all turns finish.
+ * Phaser内部のプレイヤー状態からReactへ返すGameResultを作るFactoryです。
+ * ResultScreenや外部メインゲームが必要とする順位・得点・内訳をここで整形します。
  */
 export function createGameResultPayload({ scoreLedger, settings, roundCount }) {
   const ranking = scoreLedger.getRanking();

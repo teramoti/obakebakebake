@@ -1,3 +1,7 @@
+/**
+ * ターン開始、交代、ラウンド案内など、プレイ前後の流れを描画するRendererです。
+ * 待ち時間を短くしつつ、次に何をするかを画面内ポップアップで伝えます。
+ */
 import Phaser from 'phaser';
 import { PLAYER_COLORS, PLAYER_NAMES } from '../data/gameConfig.js';
 import GimmickDirector from './GimmickDirector.js';
@@ -7,13 +11,18 @@ import { CYAN, GOLD, MUTED, PANEL, compactDifficultyLabel, compactMission, forma
  * FlowScreenRenderer owns READY, turn intro, and handoff screens.
  */
 export default class FlowScreenRenderer {
+  // READY、INTRO、HANDOFF画面でScene状態を参照するため保持します。
   constructor(scene) {
     this.scene = scene;
   }
 
+  // ゲーム開始前のREADY画面を描画します。
   showReadyScreen() { showReadyScreen.call(this.scene); }
+  // ラウンド、MOVE、イベント、STARTを短く見せるターン前画面です。
   showTurnIntro() { showTurnIntro.call(this.scene); }
+  // 次プレイヤーへ渡す短い交代ポップアップを描画します。
   showHandoff() { showHandoff.call(this.scene); }
+  // 次に遊ぶプレイヤー名を表示用に返します。
   getNextLabel() { return getNextLabel.call(this.scene); }
 }
 
@@ -90,9 +99,8 @@ function showTurnIntro(){
     this.add.text(640, 438, compactMission(this.currentStage.mission), { fontFamily: 'Arial Black', fontSize: 28, color: GOLD, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5);
     this.add.text(640, 475, '鏡を回してゴールへ。小ボーナスは右下に表示。', { fontFamily: 'Arial Black', fontSize: 20, color: CYAN, align: 'center' }).setOrigin(0.5);
     const start = this.ui.pill(445, 536, 'START', { bg: 0xff75d8, fg: '#061022', width: 390, height: 54, fontSize: 25, line: 0xffffff });
-    // Do not tween the text y-position with an absolute value.
-    // The previous absolute y tween moved the player label to y=0,
-    // which made P1/P2/P3/P4 appear outside the safe area on the turn intro.
+    // プレイヤー表記を絶対座標Tweenしないようにします。
+    // 以前はy=0へ移動して、P1/P2/P3/P4が画面上端からはみ出していました。
     this.tweens.add({
       targets: [panel, playerText, start],
       alpha: { from: 0.2, to: 1 },
@@ -104,8 +112,8 @@ function showTurnIntro(){
   }
 
 function showHandoff(){
-    // Keep the previous board on screen and show only a compact popup.
-    // This avoids the heavy full-screen stop between players.
+    // 交代時は盤面を残し、小さいポップアップだけを重ねます。
+    // 全画面停止を避け、プレイヤー交代のテンポを軽くします。
     this.drawPlaying();
     const { player, scoring, cleared } = this.lastResult;
     const playerColor = PLAYER_COLORS[player.index];

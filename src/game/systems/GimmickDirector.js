@@ -1,7 +1,6 @@
 /**
- * GimmickDirector turns the current beam result into short, readable UI hints.
- * It does not change the puzzle solution; it explains the live gimmick state so
- * the player can understand walls, portals, crystals, ghosts, and move pressure.
+ * ラウンドイベントに応じたMOVE補正などを決めるDirectorです。
+ * ルールの変化をここに寄せ、Scene本体がイベントごとの条件分岐で膨らまないようにします。
  */
 export default class GimmickDirector {
   constructor(event) {

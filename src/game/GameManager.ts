@@ -1,3 +1,7 @@
+/**
+ * ReactとPhaserを接続する境界クラスです。
+ * 設定の保持、Phaser起動、GameResultの受け渡しを担当し、外部メインゲーム連携の入口にもなります。
+ */
 import Phaser from 'phaser'
 import MirrorPartyScene from './scenes/MirrorPartyScene.js'
 import { DIFFICULTY_SETTINGS } from './data/gameConfig.js'
@@ -28,6 +32,7 @@ let currentSettings: GameSettings = { ...DEFAULT_SETTINGS }
 let game: Phaser.Game | null = null
 const listeners = new Set<SettingsListener>()
 
+// 外部本体やStartScreenから来た設定値を、人数1〜4・時間30/45/60・存在する難易度へ丸めます。
 function normalizeSettings(settings: Partial<GameSettings> & { players?: number; seconds?: number }): GameSettings {
   const requestedDifficulty = settings.difficulty ?? DEFAULT_SETTINGS.difficulty
   const safeDifficulty = Object.prototype.hasOwnProperty.call(DIFFICULTY_SETTINGS, requestedDifficulty)
@@ -49,12 +54,14 @@ function normalizeSettings(settings: Partial<GameSettings> & { players?: number;
   }
 }
 
+// 同じ設定で再通知しないための比較です。Reactの無限更新防止にも使います。
 function settingsEqual(a: GameSettings, b: GameSettings) {
   return a.playerCount === b.playerCount
     && a.totalSeconds === b.totalSeconds
     && a.difficulty === b.difficulty
 }
 
+// 親ゲーム側がwindowへ置いた設定を読みます。未設定なら空オブジェクトにします。
 function readExternalSettings(): ExternalSettings {
   if (typeof window === 'undefined') return {}
   const external = window.GameManager?.settings || window.__GAME_MANAGER_SETTINGS__ || {}
@@ -65,6 +72,7 @@ function readExternalSettings(): ExternalSettings {
   }
 }
 
+// 現在設定をwindowへ同期し、外部本体やデバッグ画面から参照できるようにします。
 function syncWindowSettings() {
   if (typeof window === 'undefined') return
   window.__GAME_MANAGER_SETTINGS__ = { ...currentSettings }
@@ -77,6 +85,7 @@ function syncWindowSettings() {
   }
 }
 
+// 設定変更を保存し、値が変わった場合だけ購読者へ通知します。
 function publishSettings(settings: Partial<GameSettings> & { players?: number; seconds?: number }) {
   const nextSettings = normalizeSettings(settings)
   if (settingsEqual(nextSettings, currentSettings)) {
@@ -90,7 +99,7 @@ function publishSettings(settings: Partial<GameSettings> & { players?: number; s
   return currentSettings
 }
 
-/** React title screen reads this snapshot instead of keeping player count in local state. */
+/** React側はローカルstateではなく、この関数から現在のゲーム設定を取得します。 */
 export function getGameSettings() {
   const normalized = normalizeSettings({ ...currentSettings, ...readExternalSettings() })
   if (!settingsEqual(normalized, currentSettings)) currentSettings = normalized
@@ -98,29 +107,32 @@ export function getGameSettings() {
   return currentSettings
 }
 
-/** Host app or StartScreen can update settings through this single entry point. */
+/** 外部本体またはStartScreenからの設定変更は、この入口に集約します。 */
 export function setGameSettings(partialSettings: Partial<GameSettings>) {
   return publishSettings({ ...currentSettings, ...partialSettings })
 }
 
+// useSyncExternalStoreから呼ばれる購読口です。解除関数を返します。
 export function subscribeGameSettings(listener: SettingsListener) {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
 
+// メインゲーム側が人数だけ確認したい場合の小さな取得口です。
 export function getPlayerCount() {
   return getGameSettings().playerCount
 }
 
 /**
- * Starts Phaser and reports final GameResult back to React App.
- * This is the Mario-Party-like integration point: Phaser is only the mini-game body.
+ * Phaserを起動し、ゲーム終了時にGameResultをReact側へ返します。
+ * ミニゲーム本体はPhaser、画面遷移と外部連携はReact/GameManagerが担当します。
  */
 export function startGame(
   parent: HTMLElement,
   partialSettings: Partial<GameSettings>,
   onFinish: (result: GameResult) => void,
 ) {
+  // 二重起動を避けるため、前のPhaserインスタンスを先に破棄します。
   destroyGame()
   const settings = setGameSettings(partialSettings)
 
@@ -149,6 +161,7 @@ export function startGame(
   return game
 }
 
+// React側がGameScreenを離れたときにPhaserを完全に破棄します。
 export function destroyGame() {
   if (game) {
     game.destroy(true)

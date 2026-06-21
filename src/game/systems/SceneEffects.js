@@ -1,3 +1,7 @@
+/**
+ * 紙吹雪、CLEARバースト、光ルートリプレイなどの演出を担当します。
+ * ゲームの判定処理とは分け、見た目の動きだけをここに集約します。
+ */
 import { cellCenter } from './sceneUiHelpers.js';
 import { LIGHT_COLOR_HEX } from './ColorPuzzleDirector.js';
 
@@ -5,12 +9,16 @@ import { LIGHT_COLOR_HEX } from './ColorPuzzleDirector.js';
  * SceneEffects owns reusable motion effects used by clear and result screens.
  */
 export default class SceneEffects {
+  // 紙吹雪や光ルート再生を描くため、Sceneを保持します。
   constructor(scene) {
     this.scene = scene;
   }
 
+  // ResultやCLEAR時の盛り上げ用紙吹雪を追加します。
   addConfettiRain() { addConfettiRain.call(this.scene); }
+  // CLEARした瞬間に盤面上へ短い光の爆発を出します。
   addClearBurst() { addClearBurst.call(this.scene); }
+  // クリア後、光が通った道をなぞって観戦者にも解法を見せます。
   addRouteReplay(lines) { addRouteReplay.call(this.scene, lines); }
 }
 

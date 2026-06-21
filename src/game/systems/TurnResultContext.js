@@ -1,9 +1,6 @@
 /**
- * TurnResultContext keeps score input explicit for each finished turn.
- *
- * v11 keeps extra click actions removed because they were unclear in play.
- * The score now uses the beam result directly: crystals are automatic bonus
- * points, and ghosts are automatic penalties.
+ * 1ターン終了時の判定結果をスコア計算向けに整えるクラスです。
+ * 光線結果、ボーナス、失敗要因をまとめ、ScoreLedgerへ渡しやすくします。
  */
 export default class TurnResultContext {
   static create(result) {

@@ -1,13 +1,15 @@
 /**
- * Small wrapper around Phaser Sound. It keeps volume decisions in one class and
- * lets the scene call semantic names such as playClear() instead of raw strings.
+ * BGMとSEの再生をまとめる音声管理クラスです。
+ * Phaser側から名前で音を呼び、画面やイベントごとの音切り替えを集約します。
  */
 export default class GameAudio {
+  // Phaserのsound managerを使うためSceneを保持します。
   constructor(scene) {
     this.scene = scene;
     this.currentBgm = null;
   }
 
+  // SE再生の共通入口です。存在しない音でもゲームが止まらないよう保護します。
   play(key, volume = 0.35) {
     if (!this.scene.sound?.get) return;
     this.scene.sound.play(key, { volume });
@@ -33,6 +35,7 @@ export default class GameAudio {
     this.currentBgm.play();
   }
 
+  // 画面遷移時に前のBGMを止めます。
   stopBgm() {
     if (this.currentBgm) this.currentBgm.stop();
     this.currentBgm = null;

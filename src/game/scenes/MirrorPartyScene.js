@@ -1,3 +1,7 @@
+/**
+ * Phaser側のメインSceneです。
+ * 入力、ターン進行、スコア確定、画面遷移を管理し、描画や演出は各Renderer/Directorへ委譲します。
+ */
 import Phaser from 'phaser';
 import { STAGES } from '../data/stages.js';
 import { BOARD, DIFFICULTY_SETTINGS, ROUND_EVENTS, applyBoardLayout } from '../data/gameConfig.js';
@@ -24,10 +28,12 @@ import FunnyMomentDirector from '../systems/FunnyMomentDirector.js';
 import { createGameResultPayload } from '../systems/GameResultFactory.js';
 import { enhanceStageForDifficulty } from '../systems/ColorPuzzleDirector.js';
 export default class MirrorPartyScene extends Phaser.Scene {
+  // React側から渡された設定と終了コールバックをScene内へ保持します。
   init(data) {
     this.settings = data.settings;
     this.onFinish = data.onFinish;
   }
+  // PNGアイコンとBGM/SEをPhaserのキャッシュへ読み込みます。
   preload() {
     ICON_KEYS.forEach((key) => this.load.image(`icon-${key}`, iconUrl(key)));
     this.load.audio('click', audioUrl('click'));
@@ -46,6 +52,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.load.audio('fever', audioUrl('fever'));
     this.load.audio('ranking', audioUrl('ranking'));
   }
+  // 難易度、ターン管理、Renderer、Audioなどを初期化してREADY画面へ入ります。
   create() {
     this.difficulty = DIFFICULTY_SETTINGS[this.settings.difficulty] || DIFFICULTY_SETTINGS.normal;
     this.board = applyBoardLayout(this.difficulty.id);
@@ -109,6 +116,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.audio.playStart();
     this.showReadyScreen();
   }
+  // プレイ中だけ毎フレーム残り時間・光線・自動CLEAR判定を更新します。
   update() {
     if (this.mode !== 'playing') return;
     const elapsed = (this.time.now - this.startTime) / 1000;
@@ -136,12 +144,14 @@ export default class MirrorPartyScene extends Phaser.Scene {
       }
     }
   }
+  // キーボード操作でREADY/INTRO/HANDOFF/RESULTを進める補助です。
   handleSpace() {
     if (this.mode === 'ready') this.showTurnIntro();
     else if (this.mode === 'intro') this.startTurn();
     else if (this.mode === 'handoff') this.nextTurn();
     else if (this.mode === 'result') this.finishGame();
   }
+  // クリック位置からゲーム状態を判定し、鏡回転や画面遷移を処理します。
   handlePointer(pointer) {
     if (this.mode === 'ready') {
       this.showTurnIntro();
@@ -235,6 +245,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
   prepareStage(stage) {
     return enhanceStageForDifficulty(stage, this.difficulty.id, this.board);
   }
+  // 現在ターン用の盤面、制限時間、MOVE上限、動的ギミックを準備します。
   startTurn() {
     this.handoffAutoCall?.remove(false);
     this.handoffAutoCall = null;
@@ -277,6 +288,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.updateBeam();
     this.drawPlaying();
   }
+  // TurnManagerを進めて、次のターンまたはResultを表示します。
   nextTurn() {
     this.handoffAutoCall?.remove(false);
     this.handoffAutoCall = null;
@@ -289,6 +301,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.orderIndex = this.turnManager.orderIndex;
     this.startTurn();
   }
+  // 現在の鏡状態から光線判定を再計算し、得点候補も更新します。
   updateBeam() {
     const traceStage = this.movingBoardDirector
       ? this.movingBoardDirector.createTraceStage(this.currentStage, this.time.now)
@@ -307,6 +320,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.turnClosing = true;
     this.time.delayedCall(delayMs, () => this.finishTurn(cleared));
   }
+  // 1ターンの得点を確定し、次プレイヤーまたはResultへ進みます。
   finishTurn(cleared) {
     if (this.mode !== 'playing' && !this.turnClosing) return;
     this.mode = 'handoff';
@@ -358,6 +372,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
     if (this.currentResult.ghosts > 0 || this.currentResult.chaserHit) this.audio.playGhost();
     this.showHandoff();
   }
+  // 外側のReactへGameResultを返し、Phaser側のゲームを終了します。
   finishGame() {
     this.handoffAutoCall?.remove(false);
     this.handoffAutoCall = null;
@@ -382,6 +397,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
   clearScreen() {
     this.children.removeAll(true);
   }
+  // 盤面とHUDを再描画します。Scene本体ではなくRendererへ委譲します。
   drawPlaying() {
     this.clearScreen();
     this.drawBackground();
@@ -393,10 +409,14 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.hudRenderer.drawScorePops();
     if (this.showHelpOverlay) this.hudRenderer.drawHelpOverlay();
   }
+  // 最初の待機画面を表示します。
   showReadyScreen() { this.flowScreens.showReadyScreen(); }
+  // 現在プレイヤーのターン開始前説明を表示します。
   showTurnIntro() { this.flowScreens.showTurnIntro(); }
+  // 交代ポップアップを表示し、自動カウントダウンで次ターンへ進めます。
   showHandoff() { this.flowScreens.showHandoff(); }
   getNextLabel() { return this.flowScreens.getNextLabel(); }
+  // Phaser内Result演出を表示します。React側Resultにも同じ結果を返します。
   showResult() { this.resultScreen.showResult(); }
   addConfettiRain() { this.effects.addConfettiRain(); }
   addClearBurst() { this.effects.addClearBurst(); }

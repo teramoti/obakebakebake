@@ -1,3 +1,7 @@
+/**
+ * Result画面に出す簡単な表彰項目を作るFactoryです。
+ * 勝敗以外の見どころを短く出し、結果画面が点数表だけにならないようにします。
+ */
 import { PLAYER_NAMES } from '../data/gameConfig.js';
 
 /**

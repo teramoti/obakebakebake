@@ -1,6 +1,6 @@
 /**
- * Shared short copy for React title help and Phaser in-game help.
- * Pages describe fair bonus gates, ghost-avoid bonus, and click-only play.
+ * タイトル画面とゲーム中ヘルプで使う遊び方データです。
+ * 画面側はこのデータを読むだけにして、説明文と表示順の変更を一か所で管理します。
  */
 export const HOW_TO_STEPS = [
   { icon: 'flashlight', title: 'ゴール', text: '出口へ。' },

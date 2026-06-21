@@ -1,3 +1,7 @@
+/**
+ * 難易度に応じて色ライト・色ゴール・固定ミラーなどを追加するDirectorです。
+ * 元ステージを壊さず、NORMAL/HARDでパズル条件を増やす役割を持ちます。
+ */
 import { traceBeam } from './beamSystem.js';
 
 export const LIGHT_COLOR_HEX = {
@@ -212,8 +216,8 @@ function markFixedMirrors(stage, difficultyId) {
   const lockCount = difficultyId === 'hard' ? 2 : (difficultyId === 'normal' ? 1 : 0);
   if (lockCount <= 0) return stage.mirrors;
 
-  // Fixed mirrors are placed in their solution direction, so they work as
-  // readable puzzle anchors instead of unfair blockers.
+  // 固定ミラーは解法向きに置きます。
+  // ランダムな邪魔ではなく、解き筋を読むための目印として使います。
   const avoidFirstAndLast = stage.mirrors.slice(1, Math.max(1, stage.mirrors.length - 1));
   const chosen = new Set(
     avoidFirstAndLast
@@ -249,9 +253,9 @@ function preventEnhancedInstantClear(stage, board) {
 }
 
 /**
- * Adds puzzle depth without adding new controls.
- * EASY keeps one light. NORMAL/HARD add color lights from the left edge.
- * Extra lights are generated as solvable routes and checked so no turn starts solved.
+ * 操作を増やさずにパズル条件だけを増やします。
+ * EASYは1ライト、NORMAL/HARDは左端から色ライトを追加します。
+ * 追加ルートは解けること、開始直後CLEARにならないことを確認してから採用します。
  */
 export function enhanceStageForDifficulty(stage, difficultyId, board) {
   let enhanced = {

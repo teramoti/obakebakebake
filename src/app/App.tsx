@@ -1,3 +1,7 @@
+/**
+ * React側の画面遷移を管理するルートコンポーネントです。
+ * StartScreenで設定を作り、GameScreenへ渡し、GameManager経由のGameResultをResultScreenへ渡します。
+ */
 import { Suspense, lazy, useCallback, useState } from 'react'
 import StartScreen from './screens/StartScreen/StartScreen'
 import ResultScreen from './screens/ResultScreen/ResultScreen'
@@ -11,6 +15,7 @@ type Screen = 'start' | 'game' | 'result'
  * App owns only screen flow.
  * Phaser runs inside GameScreen and returns GameResult through GameManager.ts.
  */
+// Start/Game/Resultの三画面だけを管理し、Phaser内部には直接触りません。
 export default function App() {
   const [screen, setScreen] = useState<Screen>('start')
   const [settings, setSettings] = useState<GameSettings | null>(null)

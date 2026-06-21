@@ -1,6 +1,6 @@
 /**
- * FunnyMomentDirector creates short reaction captions.
- * It does not change rules or score; it only gives the screen more party-game feedback.
+ * クリック後の短いリアクション文言を決めるDirectorです。
+ * CLEAR、ワープ、ボーナスなどを短く表示し、盤面の出来事を観戦者にも伝えます。
  */
 export default class FunnyMomentDirector {
   createReaction({ result, rotations, maxMoves, liveState, boardState }) {

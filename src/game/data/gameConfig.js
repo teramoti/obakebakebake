@@ -1,3 +1,7 @@
+/**
+ * ゲーム全体の固定設定を集約するファイルです。
+ * キャンバスサイズ、難易度、ラウンド数、盤面サイズ、プレイヤー色などをここで管理します。
+ */
 export const PLAYER_COLORS = ['#6ee7ff', '#ff75d8', '#ffe66d', '#7dff96'];
 export const PLAYER_NAMES = ['P1', 'P2', 'P3', 'P4'];
 export const CANVAS_WIDTH = 1280;
@@ -10,8 +14,8 @@ export const BOARD = {
   rows: 8,
 };
 
-// Difficulty owns the visible board layout. BOARD is intentionally mutable so
-// render/input helpers that import it always read the active mini-game layout.
+// 難易度ごとに表示盤面サイズを切り替えます。
+// BOARDは参照共有されるため、描画・入力処理が常に現在の盤面サイズを読めます。
 export const BOARD_LAYOUTS = {
   easy: { x: 66, y: 100, cell: 72, cols: 8, rows: 8, label: '8×8' },
   normal: { x: 42, y: 102, cell: 68, cols: 9, rows: 8, label: '9×8' },
