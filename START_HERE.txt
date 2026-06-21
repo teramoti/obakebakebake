@@ -1,0 +1,44 @@
+ピカッと！おばけミラー
+
+1. npm install
+2. npm run dev
+3. ブラウザで表示
+
+確認済みコマンド:
+- npm run test:quality
+- npm run lint
+- npm run build
+
+構成:
+- src/app/App.tsx
+- src/app/screens/StartScreen/StartScreen.tsx
+- src/app/screens/GameScreen/GameScreen.tsx
+- src/app/screens/ResultScreen/ResultScreen.tsx
+- src/game/GameManager.ts
+
+ゲーム内容:
+- 交代制パズルミニゲーム
+- 鏡クリック回転のみ
+- 3R固定
+- EASY / NORMAL / HARD
+- EASY: 1色ライト
+- NORMAL: 複数色ライト
+- HARD: 複数色ライト + 分岐ギミック候補
+
+提出ZIPには node_modules / dist / public は入れていません。
+
+## 完成版追加調整
+
+今回の完成版では、以下を追加しています。
+
+- Player交代をゲーム画面上のポップアップ + 自動カウントダウンに変更
+- タイトル画面のアトラクトデモを、小さい盤面が動く見本に変更
+- 遊び方は動画風の光ルート見本を維持
+- NORMAL/HARDで複数色ライト・色ゴールを使用
+- NORMAL/HARDに固定ミラーを追加
+  - 固定ミラーは解法向きに固定されるため、理不尽な障害ではなく読み取り用の盤面ヒントとして扱う
+- HARDでは分岐候補を維持
+- クリア時は光ルートリプレイを表示
+- 操作は鏡クリック回転のみ
+
+- Turn intro safe-area fix: player labels no longer tween to the top edge; HOW TO score page is compressed to avoid clipping.
