@@ -150,19 +150,54 @@ function verifyMovingBoard() {
 }
 
 
+function keyOfCell(cell) {
+  return `${cell.x},${cell.y}`;
+}
+
+function assertNoDuplicateCells(cells, label) {
+  assert(new Set(cells.map(keyOfCell)).size === cells.length, `${label}: cells should not overlap`);
+}
+
+function verifyEnhancedStageBalance(stage, difficulty, boardConfig) {
+  const enhanced = enhanceStageForDifficulty(stage, difficulty.id, boardConfig);
+  const initial = traceBeam(enhanced, enhanced.mirrors, boardConfig);
+  const solutionMirrors = enhanced.mirrors.map((mirror) => ({ ...mirror, type: mirror.solutionType ?? mirror.type }));
+  const solved = traceBeam(enhanced, solutionMirrors, boardConfig);
+
+  assert(!initial.reachedGoal, `${enhanced.id}: enhanced stage should not clear immediately`);
+  assert(solved.reachedGoal, `${enhanced.id}: enhanced color puzzle should be solvable`);
+  assert(solved.matchedEmitters === solved.requiredEmitters, `${enhanced.id}: every colored light should reach its own matching goal`);
+  assertNoDuplicateCells(enhanced.emitters, `${enhanced.id}: emitters`);
+  assertNoDuplicateCells(enhanced.goals, `${enhanced.id}: goals`);
+
+  enhanced.emitters.forEach((emitter) => {
+    assert(emitter.x >= 0 && emitter.y >= 0 && emitter.x < boardConfig.cols && emitter.y < boardConfig.rows, `${enhanced.id}: emitter should stay inside board`);
+  });
+  enhanced.goals.forEach((goal) => {
+    assert(goal.x >= 0 && goal.y >= 0 && goal.x < boardConfig.cols && goal.y < boardConfig.rows, `${enhanced.id}: goal should stay inside board`);
+  });
+
+  if (difficulty.id === 'easy') assert(enhanced.emitters.length === 1, 'EASY should keep one light');
+  if (difficulty.id === 'normal') assert(enhanced.emitters.length === 2, 'NORMAL should use exactly two lights');
+  if (difficulty.id === 'hard') assert(enhanced.emitters.length === 3, 'HARD should use exactly three lights');
+  if (difficulty.id !== 'easy') {
+    enhanced.emitters.slice(1).forEach((emitter) => {
+      assert(emitter.x === 0 && emitter.dir === 'right', `${enhanced.id}: added colored lights should start from the left edge`);
+    });
+  }
+}
+
 function verifyColorPuzzleEnhancement() {
   Object.values(DIFFICULTY_SETTINGS).forEach((difficulty) => {
     const boardConfig = BOARD_LAYOUTS[difficulty.id];
-    const stage = remixStageForPlayer(STAGES[0], 0, 0, boardConfig);
-    const enhanced = enhanceStageForDifficulty(stage, difficulty.id, boardConfig);
-    const solutionMirrors = enhanced.mirrors.map((mirror) => ({ ...mirror, type: mirror.solutionType ?? mirror.type }));
-    const solved = traceBeam(enhanced, solutionMirrors, boardConfig);
-
-    if (difficulty.id === 'easy') assert(enhanced.emitters.length === 1, 'EASY should keep one light');
-    if (difficulty.id === 'normal') assert(enhanced.emitters.length >= 2, 'NORMAL should add multiple colored lights');
-    if (difficulty.id === 'hard') assert(enhanced.emitters.length >= 2, 'HARD should keep multiple colored lights');
-    assert(solved.reachedGoal, `${difficulty.id}: enhanced color puzzle should be solvable`);
-    assert(solved.matchedEmitters === solved.requiredEmitters, `${difficulty.id}: all colored lights should reach a matching goal`);
+    STAGES.forEach((baseStage) => {
+      for (let round = 0; round < difficulty.roundCount; round += 1) {
+        for (let player = 0; player < 4; player += 1) {
+          const stage = remixStageForPlayer(baseStage, round, player, boardConfig);
+          verifyEnhancedStageBalance(stage, difficulty, boardConfig);
+        }
+      }
+    });
   });
 
   const hardBoard = BOARD_LAYOUTS.hard;
@@ -366,7 +401,7 @@ console.log(JSON.stringify({
   roundEvents: ROUND_EVENTS.length,
   scoreScale: 'small-integer',
   control: 'mirror-click-rotate-only',
-  uiRefresh: 'complete-safe-area-polish',
+  uiRefresh: 'complete-light-placement-balance',
   assetFormat: 'png',
   devHmr: 'disabled',
   boardLayouts: Object.fromEntries(Object.entries(BOARD_LAYOUTS).map(([id, board]) => [id, `${board.cols}x${board.rows}`])),

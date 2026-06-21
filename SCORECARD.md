@@ -58,3 +58,11 @@
 - 操作は鏡クリック回転のみ
 
 - Turn intro safe-area fix: player labels no longer tween to the top edge; HOW TO score page is compressed to avoid clipping.
+
+## 配置バランス修正
+
+- NORMAL/HARDの追加ライトを左端開始に整理
+- 複数ライト同士の開始位置・ゴール位置の重なりを検証
+- 追加ライト用の鏡ルートを生成し、解法では全ライトが同色ゴールへ届くように修正
+- 初期状態で即CLEARにならないことを強化チェックに追加
+- 追加ライト・追加ゴールが盤面外に出ないことをチェック
