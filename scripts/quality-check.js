@@ -15,6 +15,7 @@ import { createEmptyPlayer } from '../src/game/systems/scoreSystem.js';
 import LiveTwistManager from '../src/game/systems/LiveTwistManager.js';
 import MovingBoardDirector from '../src/game/systems/MovingBoardDirector.js';
 import { enhanceStageForDifficulty } from '../src/game/systems/ColorPuzzleDirector.js';
+import { createGameResultPayload } from '../src/game/systems/GameResultFactory.js';
 import { readFileSync, readdirSync } from 'node:fs';
 
 // 条件がfalseなら品質チェックを即失敗させます。
@@ -244,6 +245,93 @@ function verifyColorPuzzleEnhancement() {
   assert('splitters' in enhancedHard, 'Enhanced hard stage should include splitter metadata');
 }
 
+
+// 1〜4人、全難易度で最後まで進めたときにResultが成立するかを確認します。
+// ブラウザ操作の代替ではありませんが、ターン進行、スコア蓄積、順位生成の破綻を検出します。
+function verifyPlayableFlowSimulation() {
+  let flowCount = 0;
+
+  Object.values(DIFFICULTY_SETTINGS).forEach((difficulty) => {
+    const boardConfig = BOARD_LAYOUTS[difficulty.id];
+    const stagePool = STAGES.filter((stage) => difficulty.stageIds.includes(stage.id));
+
+    for (let playerCount = 1; playerCount <= 4; playerCount += 1) {
+      const players = Array.from({ length: playerCount }, (_, index) => createEmptyPlayer(index));
+      const ledger = new ScoreLedger(players);
+      const moveLimit = new MoveLimitManager(difficulty.id);
+      const manager = new TurnManager({
+        stages: STAGES,
+        stagePool,
+        roundEvents: ROUND_EVENTS,
+        roundCount: difficulty.roundCount,
+        playerCount,
+        boardConfig,
+      });
+
+      let turns = 0;
+      do {
+        const turn = manager.getCurrentTurn();
+        const stage = enhanceStageForDifficulty(turn.stage, difficulty.id, boardConfig);
+        const solutionMirrors = stage.mirrors.map((mirror) => ({ ...mirror, type: mirror.solutionType ?? mirror.type }));
+        const traced = traceBeam(stage, solutionMirrors, boardConfig);
+        assert(traced.reachedGoal, `${difficulty.id}/${playerCount}P/R${turn.roundIndex + 1}: simulated solution should clear`);
+        assert((traced.matchedEmitters ?? 1) === (traced.requiredEmitters ?? 1), `${difficulty.id}/${playerCount}P/R${turn.roundIndex + 1}: all colored lights should match goals`);
+
+        const maxMoves = moveLimit.getMaxMoves(stage);
+        const rotations = Math.min(stage.par, maxMoves);
+        const resultContext = TurnResultContext.create(traced);
+        const scoring = calculateScore({
+          stage,
+          result: resultContext.scoreResult,
+          rotations,
+          remaining: 8,
+          elapsed: 7,
+          stageSeconds: 15,
+          cleared: true,
+          event: turn.event,
+          rankIndex: 0,
+          maxMoves,
+          liveBonus: 0,
+          roundRuleBonus: 0,
+        });
+        assert(Number.isInteger(scoring.score), `${difficulty.id}/${playerCount}P: simulated score should be integer`);
+        ledger.applyTurn({
+          playerIndex: turn.playerIndex,
+          stage,
+          roundIndex: turn.roundIndex,
+          resultContext,
+          scoring,
+          cleared: true,
+          rotations,
+          maxMoves,
+          remaining: 8,
+          event: turn.event,
+        });
+        turns += 1;
+      } while (manager.advance());
+
+      assert(turns === difficulty.roundCount * playerCount, `${difficulty.id}/${playerCount}P: turn count should match round count times players`);
+      players.forEach((player) => {
+        assert(player.stages.length === difficulty.roundCount, `${difficulty.id}/${playerCount}P: every player should have one result per round`);
+        assert(player.totalScore >= 0, `${difficulty.id}/${playerCount}P: total score should not be negative`);
+      });
+
+      const resultPayload = createGameResultPayload({
+        scoreLedger: ledger,
+        settings: { difficulty: difficulty.id, playerCount, totalSeconds: 45 },
+        roundCount: difficulty.roundCount,
+      });
+      assert(resultPayload.results.length === playerCount, `${difficulty.id}/${playerCount}P: result should include every player`);
+      assert(resultPayload.results.every((result, index) => result.rank === index + 1), `${difficulty.id}/${playerCount}P: result ranks should be sequential`);
+      assert(resultPayload.results.every((result) => result.stages.length === difficulty.roundCount), `${difficulty.id}/${playerCount}P: React result should keep round scores`);
+      assert(resultPayload.summary.roundCount === difficulty.roundCount, `${difficulty.id}/${playerCount}P: result summary should keep round count`);
+      flowCount += 1;
+    }
+  });
+
+  return flowCount;
+}
+
 // ラウンド数、順番、ステージ割当が要件通りか確認します。
 function verifyTurnManager() {
   Object.values(DIFFICULTY_SETTINGS).forEach((difficulty) => {
@@ -436,6 +524,11 @@ function verifyUiRefreshSource() {
   assert(gameManagerSource.includes('MirrorPartyScene'), 'GameManager.ts should own Phaser scene creation');
   assert(resultScreenSource.includes('result-title-button'), 'ResultScreen should use a centered TITLE button');
   assert(resultScreenSource.includes('result-win-reason'), 'ResultScreen should include a winner reason badge');
+  assert(resultScreenSource.includes('result-podium') && resultScreenSource.includes('podiumIcon'), 'ResultScreen should show a podium before the score table');
+  assert(startScreenSource.includes('title-hero') && startScreenSource.includes('title-feature-list'), 'StartScreen should include a strengthened title hero with game features');
+  assert(cssSource.includes('.title-hero'), 'CSS should include final title polish selector');
+  const resultCssSource = readFileSync(new URL('../src/app/screens/ResultScreen/ResultScreen.css', import.meta.url), 'utf8');
+  assert(resultCssSource.includes('.result-podium'), 'Result CSS should include final podium polish selector');
 }
 
 
@@ -446,6 +539,7 @@ verifyMoveLimitsAndLedger();
 verifyLiveTwist();
 verifyMovingBoard();
 verifyColorPuzzleEnhancement();
+const flowSimulations = verifyPlayableFlowSimulation();
 verifyTurnManager();
 
 function verifyUiSafeLayout() {
@@ -455,9 +549,47 @@ function verifyUiSafeLayout() {
   assert(resultCss.includes('.result-shell') && resultCss.includes('display: flex'), 'Result shell should be flex-centered');
 }
 
+// PNG素材がゲーム内参照できるサイズで揃っているかを確認します。
+function readPngSize(fileUrl) {
+  const buffer = readFileSync(fileUrl);
+  assert(buffer.subarray(0, 8).toString('hex') === '89504e470d0a1a0a', `PNG signature should be valid: ${fileUrl.pathname}`);
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+// 雑に見えやすい主要素材が欠けていないことと、PNG寸法が揃っていることを確認します。
+function verifyIllustrationAssets() {
+  const manifest = JSON.parse(readFileSync(new URL('../resources/asset-manifest.json', import.meta.url), 'utf8'));
+  const requiredIcons = [
+    'icons/flashlight.png',
+    'icons/ghost.png',
+    'icons/crystal.png',
+    'icons/target-door.png',
+    'icons/mirror-slash.png',
+    'icons/mirror-backslash.png',
+    'icons/portal.png',
+    'icons/wall.png',
+    'icons/title-logo.png',
+  ];
+
+  requiredIcons.forEach((icon) => assert(manifest.icons.includes(icon), `manifest should include ${icon}`));
+  manifest.icons.forEach((icon) => {
+    const size = readPngSize(new URL(`../resources/${icon}`, import.meta.url));
+    if (icon === 'icons/title-logo.png') {
+      assert(size.width === 1400 && size.height === 380, 'title-logo.png should keep title logo dimensions');
+    } else {
+      assert(size.width === 128 && size.height === 128, `${icon} should be 128x128 PNG`);
+    }
+  });
+  return manifest.icons.length;
+}
+
 verifyUiSafeLayout();
 const commentedSourceFiles = verifySourceComments();
 verifyUiRefreshSource();
+const polishedIconCount = verifyIllustrationAssets();
 console.log(JSON.stringify({
   status: 'ok',
   baseStages: STAGES.length,
@@ -466,10 +598,12 @@ console.log(JSON.stringify({
   roundEvents: ROUND_EVENTS.length,
   scoreScale: 'small-integer',
   control: 'mirror-click-rotate-only',
-  uiRefresh: 'complete-result-insight-polish',
+  uiRefresh: 'complete-title-result-polish',
   assetFormat: 'png',
   devHmr: 'disabled',
   boardLayouts: Object.fromEntries(Object.entries(BOARD_LAYOUTS).map(([id, board]) => [id, `${board.cols}x${board.rows}`])),
   puzzleEnhancement: 'color-lights-goals-splitter-replay-fixed-mirror-auto-handoff-drama-feedback-round-rules',
   commentedSourceFiles,
+  flowSimulations,
+  polishedIconCount,
 }, null, 2));

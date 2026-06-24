@@ -102,3 +102,12 @@ public/
 - Resultで各プレイヤーのROUND別点数を表示するようにしました。
 - Phaser終了後のReact Result画面で bgm-result / ranking / award 音を再生する処理を追加しました。
 - test:quality / lint / build が通ることを確認しています。
+
+## Illustration polish
+- resources/icons の主要PNGを透明背景・グロー付きのゲーム用イラストへ差し替え済み。
+- SVG、public、dist、node_modules は提出ZIPに含めない。
+
+## 最終画面強化
+- タイトル画面に、ゲーム内容が伝わるヒーロー表示と要素チップを追加しました。
+- Result画面に、上位3名を先に見せる表彰エリアを追加しました。
+- 全ソースの冒頭コメントと主要クラスの責務コメントを維持しています。

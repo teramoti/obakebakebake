@@ -54,7 +54,7 @@
     "audio/bgm-result.wav"
   ],
   "stageTemplate": "stages/stage-template.js",
-  "notes": "Complete package: auto handoff countdown, animated title attract board, video-style how-to, colored multi-light goals, fair fixed mirrors, splitter candidate, route replay, click-only control, PNG assets, BGM and SE.",
+  "notes": "Complete package: polished PNG illustration assets, auto handoff countdown, animated title attract board, video-style how-to, colored multi-light goals, fair fixed mirrors, splitter candidate, route replay, click-only control, BGM and SE.",
   "game": "ピカッと！おばけミラー 完成版",
   "antiCopy": "player-specific remix boards, difficulty board sizes, color targets, multi-light goals, fair fixed mirrors, move-limited scoring, bonus gate timing, ghost avoid bonus, spotlight, danger, combo bonus, and reaction captions"
 }

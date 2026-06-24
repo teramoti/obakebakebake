@@ -1113,3 +1113,113 @@ button:disabled {
     height: 40px;
   }
 }
+
+/* Final title polish: the top area now explains the game before the player presses START. */
+.title-card {
+  grid-template-rows: minmax(138px, 172px) 40px 96px minmax(170px, 1fr) 78px;
+}
+
+.title-hero {
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(420px, 1.1fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  align-items: center;
+  min-width: 0;
+}
+
+.title-hero .title-logo-image {
+  width: min(720px, 100%);
+  height: min(158px, 18dvh);
+  justify-self: stretch;
+}
+
+.title-copy {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 2px solid rgba(110, 231, 255, 0.3);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
+  box-shadow: inset 0 0 26px rgba(110, 231, 255, 0.08);
+  overflow: hidden;
+}
+
+.title-copy p,
+.title-copy h1 {
+  margin: 0;
+}
+
+.title-copy p {
+  color: #6ee7ff;
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.title-copy h1 {
+  color: #ffe66d;
+  font-size: clamp(25px, 4.1dvh, 38px);
+  line-height: 1.05;
+  text-shadow: 0 5px 0 rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title-feature-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.title-feature-list span {
+  min-width: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(6, 16, 34, 0.74);
+  font-size: 13px;
+  font-weight: 1000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title-feature-list .ui-png-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+@media (max-height: 760px) {
+  .title-card {
+    grid-template-rows: 112px 34px 74px minmax(150px, 1fr) 62px;
+  }
+  .title-hero .title-logo-image {
+    height: 104px;
+  }
+  .title-copy {
+    padding: 10px 12px;
+    gap: 5px;
+  }
+  .title-feature-list span {
+    height: 32px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 980px) {
+  .title-hero {
+    grid-template-columns: 1fr;
+  }
+  .title-copy {
+    display: none;
+  }
+}

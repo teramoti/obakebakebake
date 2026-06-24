@@ -241,7 +241,19 @@ export default function StartScreen({ onStart }: Props) {
     <main className="app title-shell">
       {showHowTo && <HowToModal onClose={() => setShowHowTo(false)} />}
       <section className="title-card" aria-label="タイトル画面">
-        <img className="title-logo-image" src={iconUrlForTitle()} alt="ピカッと！おばけミラー" draggable="false" />
+        {/* タイトルだけで遊びの内容が伝わるよう、ロゴと短いゲーム要素を同じ場所に置きます。 */}
+        <header className="title-hero" aria-label="ゲーム紹介">
+          <img className="title-logo-image" src={iconUrlForTitle()} alt="ピカッと！おばけミラー" draggable="false" />
+          <div className="title-copy">
+            <p>LIGHT ROUTE PUZZLE</p>
+            <h1>光をそろえて3R勝負</h1>
+            <div className="title-feature-list" aria-label="ゲーム要素">
+              <span><Icon name="flashlight" label="色ライト" />色ライト</span>
+              <span><Icon name="mirror-slash" label="鏡" />鏡回転</span>
+              <span><Icon name="target-door" label="出口" />同色ゴール</span>
+            </div>
+          </div>
+        </header>
 
         <div className="title-rules" aria-label="基本ルール">
           <span><Icon name="mirror-slash" label="鏡" />回転</span>

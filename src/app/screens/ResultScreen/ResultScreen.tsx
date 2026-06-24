@@ -46,6 +46,13 @@ function bestPlayerReason(player: PlayerResult) {
   return player.winReason ?? '勝因なし'
 }
 
+// 順位カードで使う表彰アイコンを順位から選びます。
+function podiumIcon(rank: number) {
+  if (rank === 1) return 'award-crown'
+  if (rank === 2) return 'award-trophy'
+  return 'award-medal'
+}
+
 export default function ResultScreen({ result, onBack }: Props) {
   useResultAudio()
   const ranking = result.results
@@ -61,6 +68,19 @@ export default function ResultScreen({ result, onBack }: Props) {
           <span>{result.roundCount} ROUND</span>
           {champion && <strong className="result-win-reason">勝因 {bestPlayerReason(champion)}</strong>}
         </header>
+
+        {/* 上位3名を先に大きく見せ、結果画面を点数表だけにしないための表彰エリアです。 */}
+        <div className="result-podium" aria-label="上位プレイヤー">
+          {ranking.slice(0, 3).map((player) => (
+            <article className={`podium-card rank-${player.rank}`} key={`podium-${player.player}`}>
+              <Icon name={podiumIcon(player.rank)} label={`${player.rank}位`} />
+              <div>
+                <strong>P{player.player}</strong>
+                <span>{player.score}点</span>
+              </div>
+            </article>
+          ))}
+        </div>
 
         <div className="result-ranking" aria-label="順位">
           {ranking.map((player) => (
