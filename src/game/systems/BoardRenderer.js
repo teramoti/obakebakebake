@@ -112,9 +112,14 @@ function drawMovingGoal(){
     goals.forEach((goal) => {
       const center = cellCenter(goal);
       const goalHit = this.currentResult?.matchedGoalIds?.includes(goal.id);
+      const wrongGoalHit = this.currentResult?.wrongGoalCells?.some((cell) => cell.x === goal.x && cell.y === goal.y);
       const color = LIGHT_COLOR_HEX[goal.color] ?? 0x6ee7ff;
-      g.fillStyle(goalHit ? color : 0x6ee7ff, goalHit ? 0.2 : 0.08).fillCircle(center.x, center.y, 35 * pulse);
-      g.lineStyle(goalHit ? 5 : 3, goalHit ? color : 0x6ee7ff, goalHit ? 0.95 : 0.58).strokeCircle(center.x, center.y, 32 * pulse);
+      const ringColor = wrongGoalHit ? 0xff75d8 : (goalHit ? color : 0x6ee7ff);
+      g.fillStyle(ringColor, goalHit ? 0.2 : (wrongGoalHit ? 0.18 : 0.08)).fillCircle(center.x, center.y, 35 * pulse);
+      g.lineStyle(goalHit || wrongGoalHit ? 5 : 3, ringColor, goalHit || wrongGoalHit ? 0.95 : 0.58).strokeCircle(center.x, center.y, 32 * pulse);
+      if (wrongGoalHit) {
+        this.add.text(center.x, center.y - 34, '色ちがい', { fontFamily: 'Arial Black', fontSize: 12, color: '#ffb4ea', stroke: '#02040e', strokeThickness: 4 }).setOrigin(0.5);
+      }
       this.drawIconObject(goal, 'target-door', goals.length > 1 ? 34 : 42, color);
       if (goals.length > 1) {
         this.add.text(center.x, center.y + 29, goal.label ?? '', { fontFamily: 'Arial Black', fontSize: 12, color: '#ffffff', stroke: '#02040e', strokeThickness: 4 }).setOrigin(0.5);
@@ -252,21 +257,34 @@ function drawMirror(mirror){
     }).setOrigin(0.5);
   }
 
+
+function clampBeamPoint(point){
+    const center = cellCenter(point);
+    const minX = BOARD.x + BOARD.cell / 2;
+    const minY = BOARD.y + BOARD.cell / 2;
+    const maxX = BOARD.x + BOARD.cell * BOARD.cols - BOARD.cell / 2;
+    const maxY = BOARD.y + BOARD.cell * BOARD.rows - BOARD.cell / 2;
+    return {
+      x: Math.max(minX, Math.min(maxX, center.x)),
+      y: Math.max(minY, Math.min(maxY, center.y)),
+    };
+  }
+
 function drawBeam(){
     if (!this.currentResult) return;
 
     const g = this.add.graphics();
     this.currentResult.lines.forEach((line) => {
       const color = LIGHT_COLOR_HEX[line.color] ?? 0x83fffd;
-      const from = cellCenter(line.from);
-      const to = cellCenter(line.to);
-      g.lineStyle(12, color, 0.16).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
+      const from = clampBeamPoint(line.from);
+      const to = clampBeamPoint(line.to);
+      g.lineStyle(10, color, 0.14).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
     });
     this.currentResult.lines.forEach((line) => {
       const color = this.remaining <= 8 ? 0xffe66d : (LIGHT_COLOR_HEX[line.color] ?? 0x83fffd);
-      const from = cellCenter(line.from);
-      const to = cellCenter(line.to);
-      g.lineStyle(5, color, 0.95).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
+      const from = clampBeamPoint(line.from);
+      const to = clampBeamPoint(line.to);
+      g.lineStyle(4, color, 0.9).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
     });
 
     this.drawRouteMarker();
@@ -277,8 +295,8 @@ function drawRouteMarker(){
     const lines = this.currentResult.lines;
     const index = Math.floor((this.time.now / 160) % lines.length);
     const line = lines[index];
-    const from = cellCenter(line.from);
-    const to = cellCenter(line.to);
+    const from = clampBeamPoint(line.from);
+    const to = clampBeamPoint(line.to);
     const t = ((this.time.now % 160) / 160);
     const x = from.x + (to.x - from.x) * t;
     const y = from.y + (to.y - from.y) * t;

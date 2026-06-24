@@ -33,6 +33,7 @@ export default class ScoreLedger {
     player.movesLeft += scoring.movesLeft;
     player.eventBonus += scoring.breakdown.event;
     player.liveBonus += scoring.breakdown.live ?? 0;
+    player.ruleBonus += scoring.breakdown.rule ?? 0;
     player.stages.push({
       round: roundIndex,
       stageId: stage.id,

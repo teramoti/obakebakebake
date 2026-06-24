@@ -276,9 +276,12 @@ function verifyUiRefreshSource() {
   const liveTwistSource = readFileSync(new URL('../src/game/systems/LiveTwistManager.js', import.meta.url), 'utf8');
   const movingBoardSource = readFileSync(new URL('../src/game/systems/MovingBoardDirector.js', import.meta.url), 'utf8');
   const funnyMomentSource = readFileSync(new URL('../src/game/systems/FunnyMomentDirector.js', import.meta.url), 'utf8');
+  const puzzleDramaSource = readFileSync(new URL('../src/game/systems/PuzzleDramaDirector.js', import.meta.url), 'utf8');
   const colorPuzzleSource = readFileSync(new URL('../src/game/systems/ColorPuzzleDirector.js', import.meta.url), 'utf8');
+  const roundRuleSource = readFileSync(new URL('../src/game/systems/RoundRuleDirector.js', import.meta.url), 'utf8');
+  const turnFeedbackSource = readFileSync(new URL('../src/game/systems/TurnFeedbackDirector.js', import.meta.url), 'utf8');
   const helperSource = readFileSync(new URL('../src/game/systems/sceneUiHelpers.js', import.meta.url), 'utf8');
-  const splitSource = [boardRendererSource, hudRendererSource, flowRendererSource, resultRendererSource, effectsSource, helperSource, liveTwistSource, movingBoardSource, funnyMomentSource, colorPuzzleSource].join('\n');
+  const splitSource = [boardRendererSource, hudRendererSource, flowRendererSource, resultRendererSource, effectsSource, helperSource, liveTwistSource, movingBoardSource, funnyMomentSource, puzzleDramaSource, colorPuzzleSource, roundRuleSource, turnFeedbackSource].join('\n');
   const gameUiSource = `${sceneSource}\n${splitSource}`;
   const appSource = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8');
   const startScreenSource = readFileSync(new URL('../src/app/screens/StartScreen/StartScreen.tsx', import.meta.url), 'utf8');
@@ -307,6 +310,11 @@ function verifyUiRefreshSource() {
   assert(sceneSource.includes('LiveTwistManager'), 'Scene should use LiveTwistManager for dynamic bonus targets');
   assert(sceneSource.includes('MovingBoardDirector'), 'Scene should use MovingBoardDirector for fair bonus gate and ghost avoid');
   assert(sceneSource.includes('FunnyMomentDirector'), 'Scene should use FunnyMomentDirector for party reactions');
+  assert(sceneSource.includes('PuzzleDramaDirector'), 'Scene should use PuzzleDramaDirector for wrong-color and near-clear feedback');
+  assert(sceneSource.includes('RoundRuleDirector'), 'Scene should use RoundRuleDirector so each round has a different scoring target');
+  assert(roundRuleSource.includes('色ぴったり') && roundRuleSource.includes('省MOVE'), 'RoundRuleDirector should define visible round goals');
+  assert(turnFeedbackSource.includes('applyClickFeedback'), 'TurnFeedbackDirector should own click feedback effects');
+  assert(puzzleDramaSource.includes('wrongColor') && puzzleDramaSource.includes('あと'), 'PuzzleDramaDirector should expose readable puzzle feedback');
   assert(boardRendererSource.includes('drawSpotlightTarget'), 'Board should draw the moving spotlight bonus target');
   assert(boardRendererSource.includes('drawDangerTarget'), 'Board should draw the moving danger target');
   assert(boardRendererSource.includes('drawMovingGoal'), 'Board should draw the bonus gate near the fixed goal');
@@ -340,6 +348,9 @@ function verifyUiRefreshSource() {
   assert(startScreenSource.includes('盤面'), 'Title should show board-size context compactly');
   assert(gameScreenSource.includes('startGame') && gameScreenSource.includes('onFinish'), 'GameScreen should start Phaser and receive GameResult');
   assert(resultScreenSource.includes('GameResult') && resultScreenSource.includes('TITLE'), 'ResultScreen should render external GameResult');
+  assert(resultScreenSource.includes('勝因') && resultScreenSource.includes('winReason'), 'React ResultScreen should show why the winner won');
+  assert(resultScreenSource.includes('result-round-pips'), 'React ResultScreen should show per-round score chips');
+  assert(resultScreenSource.includes('useResultAudio') && resultScreenSource.includes("audioUrl('bgm-result')"), 'React ResultScreen should play result BGM/SE after Phaser hands off');
   assert(gameManagerSource.includes('export function startGame') && gameManagerSource.includes('onFinish'), 'GameManager.ts should expose startGame with result callback');
   assert(cssSource.includes('@keyframes routeFlash'), 'Title attract preview should include moving route animation');
   assert(cssSource.includes('@keyframes demoDot'), 'How-to demo should animate the light path');
@@ -364,7 +375,7 @@ function verifyUiRefreshSource() {
 
   assert(!gameConfigSource.includes('showtime:'), 'Difficulty settings should be limited to easy / normal / hard');
   assert(gameConfigSource.includes('roundCount: 3'), 'Difficulties should use fixed 3 rounds');
-  assert(gameConfigSource.includes('cell: 72'), 'Board cells should be larger than the previous compact layout');
+  assert(gameConfigSource.includes('cell: 76'), 'Board cells should be larger than the previous compact layout');
   assert(hudRendererSource.includes('ステージ名は隠し'), 'HUD should intentionally hide stage names during play');
   assert(flowRendererSource.includes('盤面を残し'), 'Player handoff should be a popup over the game board');
   assert(flowRendererSource.includes('AUTO NEXT'), 'Player handoff should auto-count down instead of waiting on a button');
@@ -388,8 +399,11 @@ function verifyUiRefreshSource() {
   assert(sceneSource.includes('enhanceStageForDifficulty'), 'Scene should apply color puzzle enhancement before play');
   assert(sceneSource.includes('mirror.locked'), 'Scene should block clicks on fixed mirrors');
   assert(boardRendererSource.includes('LIGHT_COLOR_HEX'), 'BoardRenderer should draw colored lights and goals');
+  assert(boardRendererSource.includes('clampBeamPoint'), 'Beam drawing should clamp route lines inside the visible board area');
   assert(effectsSource.includes('addRouteReplay'), 'Clear handoff should support route replay effect');
   assert(hudRendererSource.includes('drawReactionBanner'), 'HUD should draw short party reactions');
+  assert(hudRendererSource.includes('dramaBadges') && hudRendererSource.includes('dramaLabel'), 'HUD should show puzzle state feedback, not only score chips');
+  assert(boardRendererSource.includes('wrongGoalHit') && boardRendererSource.includes('色ちがい'), 'Board should show wrong-color goal feedback visually');
   assert(movingBoardSource.includes('The real exit does not move'), 'MovingBoardDirector should document the fair fixed-exit rule');
   assert(sceneSource.includes('this.boardRenderer = new BoardRenderer(this)'), 'Scene should compose BoardRenderer');
   assert(sceneSource.includes('this.hudRenderer = new HudRenderer(this)'), 'Scene should compose HudRenderer');
@@ -421,6 +435,7 @@ function verifyUiRefreshSource() {
   assert(readFileSync(new URL('../src/main.tsx', import.meta.url), 'utf8').includes('./app/App'), 'main.tsx should mount src/app/App.tsx');
   assert(gameManagerSource.includes('MirrorPartyScene'), 'GameManager.ts should own Phaser scene creation');
   assert(resultScreenSource.includes('result-title-button'), 'ResultScreen should use a centered TITLE button');
+  assert(resultScreenSource.includes('result-win-reason'), 'ResultScreen should include a winner reason badge');
 }
 
 
@@ -436,7 +451,7 @@ verifyTurnManager();
 function verifyUiSafeLayout() {
   const hud = readFileSync(new URL('../src/game/systems/HudRenderer.js', import.meta.url), 'utf8');
   const resultCss = readFileSync(new URL('../src/app/screens/ResultScreen/ResultScreen.css', import.meta.url), 'utf8');
-  assert(hud.includes('const x = 842') && hud.includes('FEVERと回数'), 'HUD should keep timer, moves and FEVER separated on the right side');
+  assert(hud.includes('const HUD_X = 760') && hud.includes('盤面外の右側へ固定'), 'HUD should keep timer, moves and FEVER separated on the right side');
   assert(resultCss.includes('.result-shell') && resultCss.includes('display: flex'), 'Result shell should be flex-centered');
 }
 
@@ -451,10 +466,10 @@ console.log(JSON.stringify({
   roundEvents: ROUND_EVENTS.length,
   scoreScale: 'small-integer',
   control: 'mirror-click-rotate-only',
-  uiRefresh: 'complete-game-result-safe-layout',
+  uiRefresh: 'complete-result-insight-polish',
   assetFormat: 'png',
   devHmr: 'disabled',
   boardLayouts: Object.fromEntries(Object.entries(BOARD_LAYOUTS).map(([id, board]) => [id, `${board.cols}x${board.rows}`])),
-  puzzleEnhancement: 'color-lights-goals-splitter-replay-fixed-mirror-auto-handoff',
+  puzzleEnhancement: 'color-lights-goals-splitter-replay-fixed-mirror-auto-handoff-drama-feedback-round-rules',
   commentedSourceFiles,
 }, null, 2));

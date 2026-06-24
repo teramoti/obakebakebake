@@ -7,9 +7,9 @@ export const PLAYER_NAMES = ['P1', 'P2', 'P3', 'P4'];
 export const CANVAS_WIDTH = 1280;
 export const CANVAS_HEIGHT = 720;
 export const BOARD = {
-  x: 60,
-  y: 110,
-  cell: 72,
+  x: 58,
+  y: 84,
+  cell: 76,
   cols: 8,
   rows: 8,
 };
@@ -17,9 +17,9 @@ export const BOARD = {
 // 難易度ごとに表示盤面サイズを切り替えます。
 // BOARDは参照共有されるため、描画・入力処理が常に現在の盤面サイズを読めます。
 export const BOARD_LAYOUTS = {
-  easy: { x: 66, y: 100, cell: 72, cols: 8, rows: 8, label: '8×8' },
-  normal: { x: 42, y: 102, cell: 68, cols: 9, rows: 8, label: '9×8' },
-  hard: { x: 44, y: 78, cell: 62, cols: 9, rows: 9, label: '9×9' },
+  easy: { x: 54, y: 72, cell: 76, cols: 8, rows: 8, label: '8×8' },
+  normal: { x: 52, y: 84, cell: 70, cols: 9, rows: 8, label: '9×8' },
+  hard: { x: 52, y: 66, cell: 66, cols: 9, rows: 9, label: '9×9' },
 };
 
 export function getBoardLayout(difficultyId = 'normal') {

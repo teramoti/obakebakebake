@@ -27,6 +27,9 @@ import MovingBoardDirector from '../systems/MovingBoardDirector.js';
 import FunnyMomentDirector from '../systems/FunnyMomentDirector.js';
 import { createGameResultPayload } from '../systems/GameResultFactory.js';
 import { enhanceStageForDifficulty } from '../systems/ColorPuzzleDirector.js';
+import PuzzleDramaDirector from '../systems/PuzzleDramaDirector.js';
+import RoundRuleDirector from '../systems/RoundRuleDirector.js';
+import TurnFeedbackDirector from '../systems/TurnFeedbackDirector.js';
 export default class MirrorPartyScene extends Phaser.Scene {
   // React側から渡された設定と終了コールバックをScene内へ保持します。
   init(data) {
@@ -83,6 +86,9 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.resultScreen = new ResultScreenRenderer(this);
     this.effects = new SceneEffects(this);
     this.funnyMomentDirector = new FunnyMomentDirector();
+    this.puzzleDramaDirector = new PuzzleDramaDirector();
+    this.roundRuleDirector = new RoundRuleDirector();
+    this.turnFeedbackDirector = new TurnFeedbackDirector();
     this.roundIndex = 0;
     this.orderIndex = 0;
     this.mode = 'ready';
@@ -100,6 +106,9 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.feverPlayed = false;
     this.reactionText = '';
     this.reactionBorn = 0;
+    this.currentDramaState = null;
+    this.currentRoundRule = null;
+    this.currentRoundRuleState = null;
     this.handoffAutoCall = null;
     this.handoffExpiresAt = 0;
     this.input.on('pointerdown', (pointer) => this.handlePointer(pointer));
@@ -144,14 +153,12 @@ export default class MirrorPartyScene extends Phaser.Scene {
       }
     }
   }
-  // キーボード操作でREADY/INTRO/HANDOFF/RESULTを進める補助です。
   handleSpace() {
     if (this.mode === 'ready') this.showTurnIntro();
     else if (this.mode === 'intro') this.startTurn();
     else if (this.mode === 'handoff') this.nextTurn();
     else if (this.mode === 'result') this.finishGame();
   }
-  // クリック位置からゲーム状態を判定し、鏡回転や画面遷移を処理します。
   handlePointer(pointer) {
     if (this.mode === 'ready') {
       this.showTurnIntro();
@@ -166,7 +173,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
       return;
     }
     if (this.mode === 'result') {
-      if (pointer.x >= 540 && pointer.x <= 740 && pointer.y >= 640 && pointer.y <= 690) {
+      if (pointer.x >= 540 && pointer.x <= 740 && pointer.y >= 590 && pointer.y <= 642) {
         this.finishGame();
       }
       return;
@@ -194,46 +201,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.audio.playClick();
     this.scorePops.push({ x: pointer.x, y: pointer.y, text: '回転', born: this.time.now });
     this.updateBeam();
-    const liveState = this.liveTwistManager?.getLiveScore({
-      result: this.currentResult,
-      now: this.time.now,
-      cleared: this.currentResult.reachedGoal,
-    });
-    if (liveState?.spot) {
-      this.scorePops.push({ x: pointer.x, y: pointer.y - 26, text: 'スポット', born: this.time.now });
-      this.audio.playHint();
-    }
-    if (liveState?.danger) {
-      this.scorePops.push({ x: pointer.x, y: pointer.y - 52, text: '危険', born: this.time.now });
-      this.audio.playGhost();
-    }
-    if (liveState?.combo) {
-      this.scorePops.push({ x: pointer.x, y: pointer.y - 78, text: 'コンボ', born: this.time.now });
-      this.audio.playEvent();
-    }
-    const boardState = this.movingBoardDirector?.getDynamicScore({
-      result: this.currentResult,
-      cleared: this.currentResult.reachedGoal,
-    });
-    if (boardState?.movingGoal) {
-      this.scorePops.push({ x: pointer.x, y: pointer.y - 104, text: 'ボーナス門', born: this.time.now });
-      this.audio.playEvent();
-    }
-    if (boardState?.ghostAvoided) {
-      this.scorePops.push({ x: pointer.x, y: pointer.y - 130, text: 'おばけ回避', born: this.time.now });
-      this.audio.playHint();
-    }
-    if (boardState?.chaserHit) {
-      this.scorePops.push({ x: pointer.x, y: pointer.y - 130, text: 'おばけ通過', born: this.time.now });
-      this.audio.playGhost();
-    }
-    this.reactionText = this.funnyMomentDirector.createReaction({
-      result: this.currentResult,
-      rotations: this.turnRotations,
-      maxMoves: this.maxMoves,
-      liveState,
-      boardState,
-    });
+    this.reactionText = this.turnFeedbackDirector.applyClickFeedback({ scene: this, pointer });
     this.reactionBorn = this.time.now;
     this.drawPlaying();
     if (this.currentResult.reachedGoal) {
@@ -245,7 +213,6 @@ export default class MirrorPartyScene extends Phaser.Scene {
   prepareStage(stage) {
     return enhanceStageForDifficulty(stage, this.difficulty.id, this.board);
   }
-  // 現在ターン用の盤面、制限時間、MOVE上限、動的ギミックを準備します。
   startTurn() {
     this.handoffAutoCall?.remove(false);
     this.handoffAutoCall = null;
@@ -256,6 +223,12 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.currentEvent = turn.event;
     this.currentPlayerIndex = turn.playerIndex;
     this.currentStage = enhanceStageForDifficulty(turn.stage, this.difficulty.id, this.board);
+    this.currentRoundRule = this.roundRuleDirector.getRule({
+      roundIndex: this.roundIndex,
+      difficultyId: this.difficulty.id,
+      stage: this.currentStage,
+    });
+    this.currentRoundRuleState = null;
     this.mirrorStates = cloneMirrors(this.currentStage);
     this.gimmickDirector = new GimmickDirector(this.currentEvent);
     this.liveTwistManager = new LiveTwistManager();
@@ -285,10 +258,10 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.feverPlayed = false;
     this.reactionText = '鏡をクリック!';
     this.reactionBorn = this.time.now;
+    this.currentDramaState = null;
     this.updateBeam();
     this.drawPlaying();
   }
-  // TurnManagerを進めて、次のターンまたはResultを表示します。
   nextTurn() {
     this.handoffAutoCall?.remove(false);
     this.handoffAutoCall = null;
@@ -301,7 +274,6 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.orderIndex = this.turnManager.orderIndex;
     this.startTurn();
   }
-  // 現在の鏡状態から光線判定を再計算し、得点候補も更新します。
   updateBeam() {
     const traceStage = this.movingBoardDirector
       ? this.movingBoardDirector.createTraceStage(this.currentStage, this.time.now)
@@ -314,13 +286,25 @@ export default class MirrorPartyScene extends Phaser.Scene {
         now: this.time.now,
       })
       : traced;
+    this.currentDramaState = this.puzzleDramaDirector?.evaluate({
+      result: this.currentResult,
+      rotations: this.turnRotations,
+      maxMoves: this.maxMoves,
+      cleared: this.currentResult?.reachedGoal ?? false,
+    }) ?? null;
+    this.currentRoundRuleState = this.roundRuleDirector?.evaluate({
+      rule: this.currentRoundRule,
+      result: this.currentResult,
+      rotations: this.turnRotations,
+      maxMoves: this.maxMoves,
+      cleared: this.currentResult?.reachedGoal ?? false,
+    }) ?? null;
   }
   lockTurnAndFinish(delayMs, cleared) {
     if (this.turnClosing) return;
     this.turnClosing = true;
     this.time.delayedCall(delayMs, () => this.finishTurn(cleared));
   }
-  // 1ターンの得点を確定し、次プレイヤーまたはResultへ進みます。
   finishTurn(cleared) {
     if (this.mode !== 'playing' && !this.turnClosing) return;
     this.mode = 'handoff';
@@ -338,7 +322,20 @@ export default class MirrorPartyScene extends Phaser.Scene {
       result: resultContext.scoreResult,
       cleared,
     }) ?? { value: 0, movingGoal: false, chaserHit: false, ghostAvoided: false };
-    const liveBonus = liveScore.value + boardScore.value;
+    const dramaState = this.puzzleDramaDirector.evaluate({
+      result: resultContext.scoreResult,
+      rotations: this.turnRotations,
+      maxMoves: this.maxMoves,
+      cleared,
+    });
+    const ruleState = this.roundRuleDirector.evaluate({
+      rule: this.currentRoundRule,
+      result: resultContext.scoreResult,
+      rotations: this.turnRotations,
+      maxMoves: this.maxMoves,
+      cleared,
+    });
+    const liveBonus = liveScore.value + boardScore.value + dramaState.bonus;
     const scoring = calculateScore({
       stage: this.currentStage,
       result: resultContext.scoreResult,
@@ -351,6 +348,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
       rankIndex,
       maxMoves: this.maxMoves,
       liveBonus,
+      roundRuleBonus: ruleState.bonus,
     });
     const player = this.scoreLedger.applyTurn({
       playerIndex: this.currentPlayerIndex,
@@ -365,14 +363,13 @@ export default class MirrorPartyScene extends Phaser.Scene {
       remaining: this.remaining,
       event: this.currentEvent,
     });
-    this.lastResult = { player, scoring, cleared, resultContext, liveScore, boardScore };
+    this.lastResult = { player, scoring, cleared, resultContext, liveScore, boardScore, dramaState, ruleState, roundRule: this.currentRoundRule };
     if (cleared) this.audio.playClear();
     else this.audio.playFinish();
     if (scoring.isPerfect) this.audio.playPerfect();
     if (this.currentResult.ghosts > 0 || this.currentResult.chaserHit) this.audio.playGhost();
     this.showHandoff();
   }
-  // 外側のReactへGameResultを返し、Phaser側のゲームを終了します。
   finishGame() {
     this.handoffAutoCall?.remove(false);
     this.handoffAutoCall = null;
@@ -397,7 +394,6 @@ export default class MirrorPartyScene extends Phaser.Scene {
   clearScreen() {
     this.children.removeAll(true);
   }
-  // 盤面とHUDを再描画します。Scene本体ではなくRendererへ委譲します。
   drawPlaying() {
     this.clearScreen();
     this.drawBackground();

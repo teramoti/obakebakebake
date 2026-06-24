@@ -62,20 +62,41 @@ function addClearBurst(){
 
 function addRouteReplay(lines = []){
     if (!lines.length) return;
-    const replayLines = lines.slice(0, 24);
-    const g = this.add.graphics();
-    replayLines.forEach((line) => {
-      const from = cellCenter(line.from);
-      const to = cellCenter(line.to);
-      const color = LIGHT_COLOR_HEX[line.color] ?? 0xffe66d;
-      g.lineStyle(8, color, 0.0).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
-    });
+    const replayLines = lines.slice(0, 28);
     const pulse = this.add.graphics();
     replayLines.forEach((line) => {
       const from = cellCenter(line.from);
       const to = cellCenter(line.to);
       const color = LIGHT_COLOR_HEX[line.color] ?? 0xffe66d;
-      pulse.lineStyle(6, color, 0.72).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
+      pulse.lineStyle(8, color, 0.52).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
     });
-    this.tweens.add({ targets: pulse, alpha: { from: 0.15, to: 0.85 }, duration: 320, yoyo: true, repeat: 3, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: pulse, alpha: { from: 0.12, to: 0.9 }, duration: 260, yoyo: true, repeat: 4, ease: 'Sine.easeInOut' });
+
+    replayLines.forEach((line, index) => {
+      const from = cellCenter(line.from);
+      const to = cellCenter(line.to);
+      const color = LIGHT_COLOR_HEX[line.color] ?? 0xffe66d;
+      this.time.delayedCall(index * 36, () => {
+        const spark = this.add.circle(from.x, from.y, 8, color, 0.98).setStrokeStyle(3, 0xffffff, 0.82);
+        this.tweens.add({
+          targets: spark,
+          x: to.x,
+          y: to.y,
+          scale: { from: 1.3, to: 0.45 },
+          alpha: { from: 1, to: 0.05 },
+          duration: 220,
+          ease: 'Cubic.easeOut',
+          onComplete: () => spark.destroy(),
+        });
+      });
+    });
+
+    const label = this.add.text(640, 156, 'ROUTE REPLAY', {
+      fontFamily: 'Arial Black',
+      fontSize: 28,
+      color: '#ffe66d',
+      stroke: '#050718',
+      strokeThickness: 7,
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: label, y: 126, alpha: 0, duration: 900, delay: 280, ease: 'Cubic.easeOut' });
   }

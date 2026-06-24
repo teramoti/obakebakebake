@@ -40,6 +40,7 @@ export function calculateScore({
   rankIndex = 0,
   maxMoves = 0,
   liveBonus = 0,
+  roundRuleBonus = 0,
 }) {
   const movesLeft = Math.max(0, maxMoves - rotations);
   const isPerfect = cleared && result.crystals === stage.crystals.length && result.ghosts === 0 && rotations <= stage.par;
@@ -58,6 +59,7 @@ export function calculateScore({
     fever: fever ? 1 : 0,
     event: eventPoint,
     live: liveBonus,
+    rule: roundRuleBonus,
     color: cleared ? Math.max(0, (result.matchedEmitters ?? 1) - 1) : 0,
     split: cleared && result.usedSplitter ? 1 : 0,
     ghosts: -result.ghosts,
@@ -89,6 +91,7 @@ export function createEmptyPlayer(index) {
     movesLeft: 0,
     eventBonus: 0,
     liveBonus: 0,
+    ruleBonus: 0,
     stages: [],
   };
 }

@@ -1,9 +1,11 @@
 /**
  * Phaserから返されたGameResultを表示するReact側の結果画面です。
- * 外部のメインゲームへ渡す順位・得点・プレイヤー結果を確認しやすい形に整えます。
+ * 外部のメインゲームへ渡す順位・得点・勝因を、ゲーム終了後に確認しやすい形へ整えます。
  */
+import { useEffect } from 'react'
 import Icon from '../../components/Icon'
-import type { GameResult } from '../../types/game'
+import type { GameResult, PlayerResult } from '../../types/game'
+import { audioUrl } from '../../../game/data/resourcePaths.js'
 import './ResultScreen.css'
 
 type Props = {
@@ -11,12 +13,41 @@ type Props = {
   onBack: () => void
 }
 
-/**
- * React result screen used by the host app.
- * This is the integration point for Mario-Party-like game flow: Phaser returns GameResult, App displays it here.
- */
-// React側へ返された結果を外部連携確認用にも見やすく表示します。
+// Result画面でもBGM/SEを鳴らします。Phaserを破棄した後のReact画面なので、HTMLAudioで再生します。
+function useResultAudio() {
+  useEffect(() => {
+    const bgm = new Audio(audioUrl('bgm-result'))
+    const award = new Audio(audioUrl('award'))
+    const ranking = new Audio(audioUrl('ranking'))
+    bgm.loop = true
+    bgm.volume = 0.12
+    award.volume = 0.28
+    ranking.volume = 0.24
+
+    bgm.play().catch(() => {})
+    ranking.play().catch(() => {})
+    window.setTimeout(() => award.play().catch(() => {}), 320)
+
+    return () => {
+      bgm.pause()
+      award.pause()
+      ranking.pause()
+    }
+  }, [])
+}
+
+function roundLabel(stage: PlayerResult['stages'][number]) {
+  const mark = stage.cleared ? 'CLEAR' : 'MISS'
+  return `R${stage.round + 1} ${stage.score}点 ${mark}`
+}
+
+function bestPlayerReason(player: PlayerResult) {
+  if (player.bestRound) return `${player.winReason ?? '勝因'} / R${player.bestRound.round} ${player.bestRound.score}点`
+  return player.winReason ?? '勝因なし'
+}
+
 export default function ResultScreen({ result, onBack }: Props) {
+  useResultAudio()
   const ranking = result.results
   const champion = ranking[0]
 
@@ -28,6 +59,7 @@ export default function ResultScreen({ result, onBack }: Props) {
           <p>RESULT</p>
           <h1>{champion ? `WINNER P${champion.player}` : 'RESULT'}</h1>
           <span>{result.roundCount} ROUND</span>
+          {champion && <strong className="result-win-reason">勝因 {bestPlayerReason(champion)}</strong>}
         </header>
 
         <div className="result-ranking" aria-label="順位">
@@ -40,6 +72,12 @@ export default function ResultScreen({ result, onBack }: Props) {
               </div>
               <div className="result-score"><b>{player.score}</b><span>点</span></div>
               <div className="result-clear">CLEAR {player.clears}/{result.roundCount}</div>
+              <div className="result-reason">{player.winReason ?? '勝因なし'}</div>
+              <div className="result-round-pips" aria-label={`P${player.player}のラウンド別点数`}>
+                {player.stages.slice(0, result.roundCount).map((stage) => (
+                  <span className={stage.cleared ? 'clear' : 'miss'} key={`${player.player}-${stage.round}`}>{roundLabel(stage)}</span>
+                ))}
+              </div>
             </article>
           ))}
         </div>
@@ -56,12 +94,12 @@ export default function ResultScreen({ result, onBack }: Props) {
   )
 }
 
-// 指定した項目で一番高いプレイヤーをBONUS表示用に返します。
+// 指定した項目で一番高い値をBONUS表示用に返します。
 function topValue(items: GameResult['results'], key: 'crystals') {
   return Math.max(...items.map((item) => item[key]), 0)
 }
 
-// 少ない方が良い項目のBONUS表示用にプレイヤーを返します。
+// 少ない方が良い項目の値をBONUS表示用に返します。
 function lowestValue(items: GameResult['results'], key: 'ghosts' | 'rotations') {
   if (items.length === 0) return 0
   return Math.min(...items.map((item) => item[key]))

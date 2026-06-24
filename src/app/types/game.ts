@@ -10,10 +10,33 @@ export type GameSettings = {
   difficulty: DifficultyId
 }
 
+export type ScoreBreakdown = {
+  clear?: number
+  time?: number
+  move?: number
+  crystals?: number
+  mission?: number
+  perfect?: number
+  fever?: number
+  event?: number
+  live?: number
+  rule?: number
+  color?: number
+  split?: number
+  ghosts?: number
+}
+
+export type RouteSnapshot = {
+  cells: { x: number; y: number; color?: string }[]
+  lines: { from: { x: number; y: number }; to: { x: number; y: number }; color?: string }[]
+}
+
 export type TurnStageResult = {
   round: number
   stageId: string
   stageName: string
+  baseStageName?: string
+  remixLabel?: string
   score: number
   cleared: boolean
   rotations: number
@@ -22,7 +45,13 @@ export type TurnStageResult = {
   crystals: number
   ghosts: number
   remaining: number
+  eventId?: string
   eventLabel?: string
+  matchedEmitters?: number
+  requiredEmitters?: number
+  usedSplitter?: boolean
+  breakdown?: ScoreBreakdown
+  routeSnapshot?: RouteSnapshot
 }
 
 export type PlayerResult = {
@@ -37,6 +66,12 @@ export type PlayerResult = {
   ghosts: number
   rotations: number
   movesLeft: number
+  winReason?: string
+  bestRound?: {
+    round: number
+    score: number
+    cleared: boolean
+  } | null
   stages: TurnStageResult[]
 }
 

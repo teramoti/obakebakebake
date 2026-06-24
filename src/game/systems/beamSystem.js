@@ -87,6 +87,7 @@ export function traceBeam(stage, mirrorStates, gridSize) {
   const matchedEmitters = new Set();
   const matchedGoals = new Set();
   const wrongGoals = new Set();
+  const wrongGoalCells = new Map();
   let usedPortal = false;
   let usedSplitter = false;
   let blockedByWall = false;
@@ -158,6 +159,7 @@ export function traceBeam(stage, mirrorStates, gridSize) {
           break;
         }
         wrongGoals.add(`${sourceId}:${cellKey}`);
+        wrongGoalCells.set(cellKey, { x, y, color, sourceId });
       }
 
       if (crystalCells.has(cellKey)) crystals.add(cellKey);
@@ -209,6 +211,7 @@ export function traceBeam(stage, mirrorStates, gridSize) {
     matchedGoals: matchedGoals.size,
     matchedGoalIds: [...matchedGoals],
     wrongGoals: wrongGoals.size,
+    wrongGoalCells: [...wrongGoalCells.values()],
     requiredGoals: goals.length,
     requiredEmitters: emitters.length,
   };

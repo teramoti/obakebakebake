@@ -1,13 +1,24 @@
 ピカッと！おばけミラー
 
+起動:
 1. npm install
 2. npm run dev
 3. ブラウザで表示
 
-確認済みコマンド:
+確認:
 - npm run test:quality
 - npm run lint
 - npm run build
+
+ゲーム内容:
+- 鏡クリック回転のみ
+- 1〜4人
+- 3ラウンド固定
+- EASY / NORMAL / HARD
+- 色ライトを同じ色のゴールへつなぐ
+- NORMAL/HARDは複数ライト
+- HARDは分岐候補あり
+- ResultはGameManager.ts経由でReact側へ返す
 
 構成:
 - src/app/App.tsx
@@ -15,53 +26,35 @@
 - src/app/screens/GameScreen/GameScreen.tsx
 - src/app/screens/ResultScreen/ResultScreen.tsx
 - src/game/GameManager.ts
+- src/game/scenes/MirrorPartyScene.js
+- src/game/systems/
 
-ゲーム内容:
-- 交代制パズルミニゲーム
-- 鏡クリック回転のみ
-- 3R固定
-- EASY / NORMAL / HARD
-- EASY: 1色ライト
-- NORMAL: 複数色ライト
-- HARD: 複数色ライト + 分岐ギミック候補
+提出ZIPに含めないもの:
+- node_modules
+- dist
+- public
+- svg
 
-提出ZIPには node_modules / dist / public は入れていません。
+## 追加最終調整
 
-## 完成版追加調整
+- 盤面セルを難易度別に再調整しました。
+  - EASY: 8x8 / cell 76
+  - NORMAL: 9x8 / cell 70
+  - HARD: 9x9 / cell 66
+- 右側HUDの位置と幅を再調整し、時間・回数・FEVER・色達成を同じパネル内で重なりにくくしました。
+- 小ボーナスチップの幅を広げ、右側の空白を使う構成にしました。
+- 光線が盤面外へ大きくはみ出して見える問題を抑えるため、描画時の線端を盤面内へクランプしました。
+- quality-checkにHUD位置と光線クランプのチェックを追加しました。
+面白さ調整: 色ちがい / あと何色 / 壁停止 / ぐるぐる / ナイスCLEAR のフィードバックを追加。
 
-今回の完成版では、以下を追加しています。
-
-- Player交代をゲーム画面上のポップアップ + 自動カウントダウンに変更
-- タイトル画面のアトラクトデモを、小さい盤面が動く見本に変更
-- 遊び方は動画風の光ルート見本を維持
-- NORMAL/HARDで複数色ライト・色ゴールを使用
-- NORMAL/HARDに固定ミラーを追加
-  - 固定ミラーは解法向きに固定されるため、理不尽な障害ではなく読み取り用の盤面ヒントとして扱う
-- HARDでは分岐候補を維持
-- クリア時は光ルートリプレイを表示
-- 操作は鏡クリック回転のみ
-
-- Turn intro safe-area fix: player labels no longer tween to the top edge; HOW TO score page is compressed to avoid clipping.
-
-## 配置バランス修正
-
-- NORMAL/HARDの追加ライトを左端開始に整理
-- 複数ライト同士の開始位置・ゴール位置の重なりを検証
-- 追加ライト用の鏡ルートを生成し、解法では全ライトが同色ゴールへ届くように修正
-- 初期状態で即CLEARにならないことを強化チェックに追加
-- 追加ライト・追加ゴールが盤面外に出ないことをチェック
-
-[コメント整備]
-- src/scripts配下のソースには役割コメントを付けています。
-- 読む順は GameManager.ts → App.tsx → GameScreen.tsx → MirrorPartyScene.js → systems が追いやすいです。
+追加調整:
+- 3ラウンドごとに狙いが変わるようにしました。
+- Resultで勝因を表示します。
+- CLEAR後のルートリプレイを強化しました。
 
 
-[コメント見直し]
-- 先輩向けの文言を削除し、ファイル責務・連携先・ゲーム内での意図が分かるコメントへ整理しました。
-- 自動品質チェックで「先輩」などの相手依存コメントが残らないことを確認します。
-
-
-## UI安全領域修正
-- Game画面の時間・回数・FEVER表示を右側HUDへ分離し、重なりにくい配置へ修正。
-- React Result画面の `.result-shell` に `display: flex` を追加し、中央寄せ指定が効くよう修正。
-- `scripts/quality-check.js` にHUD分離とResult中央寄せの再発防止チェックを追加。
+## 最新修正: Result勝因表示
+- React側ResultScreenに勝因バッジを追加しました。
+- Resultで各プレイヤーのROUND別点数を表示するようにしました。
+- Phaser終了後のReact Result画面で bgm-result / ranking / award 音を再生する処理を追加しました。
+- test:quality / lint / build が通ることを確認しています。

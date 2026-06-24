@@ -1,30 +1,9 @@
 # ピカッと！おばけミラー
 
-Vite + React + Phaser + TypeScript/JavaScript 混在構成の交代制パズルミニゲームです。
+鏡をクリックで回転させ、ライトの光を同じ色のゴールへつなぐ交代制パズルミニゲームです。
+1〜4人、3ラウンド固定、最後に順位が出ます。
 
-## 実装済み
-
-- `src/app/App.tsx` で Start / Game / Result を管理
-- `src/app/screens/StartScreen/StartScreen.tsx`
-- `src/app/screens/GameScreen/GameScreen.tsx`
-- `src/app/screens/ResultScreen/ResultScreen.tsx`
-- `src/game/GameManager.ts` で Phaser 起動と Result 返却
-- 操作は鏡クリック回転のみ
-- 3R固定
-- 難易度は EASY / NORMAL / HARD
-- 難易度ごとの盤面サイズ
-  - EASY: 8×8
-  - NORMAL: 9×8
-  - HARD: 9×9
-- 色ライト / 色ゴール
-- NORMAL 以上で複数ライト
-- HARD で分岐ギミック候補
-- クリアルートのリプレイ演出
-- 小さい整数スコア
-- BGM / SE
-- PNG素材のみ
-
-## 実行
+## 起動
 
 ```bash
 npm install
@@ -39,53 +18,87 @@ npm run lint
 npm run build
 ```
 
+## 構成
+
+```text
+src/main.tsx
+src/app/App.tsx
+src/app/screens/StartScreen/StartScreen.tsx
+src/app/screens/GameScreen/GameScreen.tsx
+src/app/screens/ResultScreen/ResultScreen.tsx
+src/game/GameManager.ts
+src/game/scenes/MirrorPartyScene.js
+src/game/systems/
+```
+
+React側は画面遷移とResult表示、Phaser側はゲーム本体を担当します。
+GameManager.ts が React と Phaser の境界になり、ゲーム終了時の結果を React 側へ返します。
+
+## ゲーム仕様
+
+- 操作は鏡クリック回転のみ
+- EASY / NORMAL / HARD の3モード
+- 全モード3ラウンド固定
+- EASY: 1色ライト
+- NORMAL: 複数色ライト + 色ゴール + 固定ミラー
+- HARD: 複数色ライト + 色ゴール + 固定ミラー + 分岐候補
+- ライトは同じ色のゴールに入ると達成
+- 全ライト達成でCLEAR
+- Player交代は画面上ポップアップ + 自動カウントダウン
+- Resultは順位、点数、クリア数、ボーナスを表示
+
+## UI修正方針
+
+- 盤面にHUDを重ねない
+- 時間・回数・FEVERは右側HUDで分離
+- ステージ名はプレイ中に出さない
+- 小ボーナスは右側へまとめる
+- Resultは中央寄せ
+- P1/P2/P3/P4 表示が画面端にはみ出さない
+- 遊び方は3ページ式で、光の動きを見せる
+
 ## ZIP方針
 
 提出ZIPには以下を含めません。
 
-- `node_modules/`
-- `dist/`
-- `public/`
-- `.svg`
+```text
+node_modules/
+dist/
+public/
+*.svg
+```
 
 素材は `resources/` に入れています。
 
-## 完成版追加調整
+## 追加最終調整
 
-今回の完成版では、以下を追加しています。
+- 盤面セルを難易度別に再調整しました。
+  - EASY: 8x8 / cell 76
+  - NORMAL: 9x8 / cell 70
+  - HARD: 9x9 / cell 66
+- 右側HUDの位置と幅を再調整し、時間・回数・FEVER・色達成を同じパネル内で重なりにくくしました。
+- 小ボーナスチップの幅を広げ、右側の空白を使う構成にしました。
+- 光線が盤面外へ大きくはみ出して見える問題を抑えるため、描画時の線端を盤面内へクランプしました。
+- quality-checkにHUD位置と光線クランプのチェックを追加しました。
 
-- Player交代をゲーム画面上のポップアップ + 自動カウントダウンに変更
-- タイトル画面のアトラクトデモを、小さい盤面が動く見本に変更
-- 遊び方は動画風の光ルート見本を維持
-- NORMAL/HARDで複数色ライト・色ゴールを使用
-- NORMAL/HARDに固定ミラーを追加
-  - 固定ミラーは解法向きに固定されるため、理不尽な障害ではなく読み取り用の盤面ヒントとして扱う
-- HARDでは分岐候補を維持
-- クリア時は光ルートリプレイを表示
-- 操作は鏡クリック回転のみ
+## 面白さ・フィードバック調整
+- 色ちがいゴール、あと何色、壁停止、ループ、分岐成功を短いリアクションで表示します。
+- CLEAR時に条件が良い場合はナイスCLEARとして小さな追加点を付けます。
+- 操作は鏡クリック回転のみのまま、盤面側の判断と見せ場を増やしています。
 
-- Turn intro safe-area fix: player labels no longer tween to the top edge; HOW TO score page is compressed to avoid clipping.
+## 面白さ追加調整
 
-## 配置バランス修正
-
-- NORMAL/HARDの追加ライトを左端開始に整理
-- 複数ライト同士の開始位置・ゴール位置の重なりを検証
-- 追加ライト用の鏡ルートを生成し、解法では全ライトが同色ゴールへ届くように修正
-- 初期状態で即CLEARにならないことを強化チェックに追加
-- 追加ライト・追加ゴールが盤面外に出ないことをチェック
-
-## ソースコメント整備
-- `src/` と `scripts/` の主要ソースにファイル責務コメントを追加しました。
-- `GameManager.ts`、`MirrorPartyScene.js`、Renderer / Manager / Director 系に処理意図コメントを追加しました。
-- `npm run test:quality` で `commentedSourceFiles` を出力し、ソース冒頭コメントの存在を確認します。
+- `RoundRuleDirector.js` を追加し、3ラウンドごとに狙いを変えました。
+  - ROUND 1: 色ちがいなしでCLEAR
+  - ROUND 2: MOVEを2回以上残してCLEAR
+  - ROUND 3: HARDは分岐、EASY/NORMALはミスなしCLEAR
+- `TurnFeedbackDirector.js` を追加し、クリック後のリアクションとポップ表示をSceneから分離しました。
+- Resultに勝因表示を追加しました。
+- クリアルートリプレイに移動する光の粒を追加し、CLEAR後にルートが見えやすくなるようにしました。
 
 
-[コメント見直し]
-- 先輩向けの文言を削除し、ファイル責務・連携先・ゲーム内での意図が分かるコメントへ整理しました。
-- 自動品質チェックで「先輩」などの相手依存コメントが残らないことを確認します。
-
-
-## UI安全領域修正
-- Game画面の時間・回数・FEVER表示を右側HUDへ分離し、重なりにくい配置へ修正。
-- React Result画面の `.result-shell` に `display: flex` を追加し、中央寄せ指定が効くよう修正。
-- `scripts/quality-check.js` にHUD分離とResult中央寄せの再発防止チェックを追加。
+## 最新修正: Result勝因表示
+- React側ResultScreenに勝因バッジを追加しました。
+- Resultで各プレイヤーのROUND別点数を表示するようにしました。
+- Phaser終了後のReact Result画面で bgm-result / ranking / award 音を再生する処理を追加しました。
+- test:quality / lint / build が通ることを確認しています。

@@ -72,33 +72,38 @@ function showTurnIntro(){
     this.currentPlayerIndex = turn.playerIndex;
     this.currentStage = this.prepareStage ? this.prepareStage(turn.stage) : turn.stage;
     this.gimmickDirector = new GimmickDirector(this.currentEvent);
+    this.currentRoundRule = this.roundRuleDirector?.getRule({
+      roundIndex: this.roundIndex,
+      difficultyId: this.difficulty.id,
+      stage: this.currentStage,
+    });
     const previewMaxMoves = this.moveLimitManager.getMaxMoves(this.currentStage, this.gimmickDirector.getMoveBonus());
     this.clearScreen();
     this.drawBackground();
 
     const playerColor = PLAYER_COLORS[this.currentPlayerIndex];
-    const eventColor = this.currentEvent?.color ?? CYAN;
+    const ruleColor = GOLD;
     const panel = this.ui.panel(150, 88, 980, 540, { fill: 0x080b1e, alpha: 0.93, line: Phaser.Display.Color.HexStringToColor(playerColor).color, lineAlpha: 0.86, lineWidth: 5, radius: 34 });
-    const playerText = this.add.text(640, 142, PLAYER_NAMES[this.currentPlayerIndex], { fontFamily: 'Arial Black', fontSize: 70, color: playerColor, stroke: '#050718', strokeThickness: 10 }).setOrigin(0.5);
-    this.add.text(640, 205, `ROUND ${this.roundIndex + 1}/${this.roundCount}`, { fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff' }).setOrigin(0.5);
+    const playerText = this.add.text(640, 136, PLAYER_NAMES[this.currentPlayerIndex], { fontFamily: 'Arial Black', fontSize: 56, color: playerColor, stroke: '#050718', strokeThickness: 9 }).setOrigin(0.5);
+    this.add.text(640, 194, `ROUND ${this.roundIndex + 1}/${this.roundCount}`, { fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff' }).setOrigin(0.5);
 
     const cards = [
       ['mirror-slash', '操作', 'クリック回転', CYAN],
+      ['round-ticket', '狙い', this.currentRoundRule?.tip ?? 'CLEAR', ruleColor],
       ['timer-bell', '回数', `${previewMaxMoves}回まで`, GOLD],
-      ['round-ticket', 'イベント', this.gimmickDirector.getEventTip(), eventColor],
     ];
     cards.forEach(([icon, label, value, color], index) => {
       const x = 230 + index * 275;
-      const card = this.ui.panel(x, 270, 225, 124, { fill: 0x111936, line: Phaser.Display.Color.HexStringToColor(color).color, lineAlpha: 0.62, radius: 24 });
-      this.add.image(x + 42, 330, `icon-${icon}`).setDisplaySize(40, 40);
-      this.add.text(x + 124, 306, label, { fontFamily: 'Arial Black', fontSize: 18, color: MUTED }).setOrigin(0.5);
-      this.add.text(x + 124, 348, value, { fontFamily: 'Arial Black', fontSize: 23, color }).setOrigin(0.5);
+      const card = this.ui.panel(x, 260, 225, 124, { fill: 0x111936, line: Phaser.Display.Color.HexStringToColor(color).color, lineAlpha: 0.62, radius: 24 });
+      this.add.image(x + 42, 320, `icon-${icon}`).setDisplaySize(40, 40);
+      this.add.text(x + 124, 296, label, { fontFamily: 'Arial Black', fontSize: 18, color: MUTED }).setOrigin(0.5);
+      this.add.text(x + 124, 338, value, { fontFamily: 'Arial Black', fontSize: 23, color }).setOrigin(0.5);
       this.tweens.add({ targets: card, alpha: { from: 0.3, to: 1 }, scaleX: { from: 0.96, to: 1 }, scaleY: { from: 0.96, to: 1 }, duration: 240, delay: index * 70, ease: 'Back.Out' });
     });
 
-    this.add.text(640, 438, compactMission(this.currentStage.mission), { fontFamily: 'Arial Black', fontSize: 28, color: GOLD, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5);
-    this.add.text(640, 475, '鏡を回してゴールへ。小ボーナスは右下に表示。', { fontFamily: 'Arial Black', fontSize: 20, color: CYAN, align: 'center' }).setOrigin(0.5);
-    const start = this.ui.pill(445, 536, 'START', { bg: 0xff75d8, fg: '#061022', width: 390, height: 54, fontSize: 25, line: 0xffffff });
+    this.add.text(640, 426, compactMission(this.currentStage.mission), { fontFamily: 'Arial Black', fontSize: 28, color: GOLD, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5);
+    this.add.text(640, 464, 'ラウンドごとに狙いが変わります。', { fontFamily: 'Arial Black', fontSize: 20, color: CYAN, align: 'center' }).setOrigin(0.5);
+    const start = this.ui.pill(445, 526, 'START', { bg: 0xff75d8, fg: '#061022', width: 390, height: 54, fontSize: 25, line: 0xffffff });
     // プレイヤー表記を絶対座標Tweenしないようにします。
     // 以前はy=0へ移動して、P1/P2/P3/P4が画面上端からはみ出していました。
     this.tweens.add({
