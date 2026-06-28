@@ -111,10 +111,10 @@ export const ROUND_EVENTS = [
     color: '#caa8ff',
   },
   {
-    id: 'feverFinale',
-    label: 'FEVER FINALE',
-    shortLabel: '終盤フィーバー',
-    description: '終盤クリアのボーナスがアップします。粘る判断も強くなります。',
+    id: 'finalSprint',
+    label: 'FINAL SPRINT',
+    shortLabel: '速攻ラスト',
+    description: '残り時間を多く残すほど有利です。早く解く判断を重視します。',
     color: '#ffb86b',
   },
 ];

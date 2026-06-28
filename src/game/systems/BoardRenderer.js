@@ -67,7 +67,9 @@ function drawBoard(){
     this.drawChaserGhost();
     this.currentStage.portals.forEach((portal) => this.drawPortal(portal));
     (this.currentStage.splitters ?? []).forEach((splitter) => this.drawSplitter(splitter));
+    this.visibleHintKeys = getVisibleHintKeys.call(this);
     this.mirrorStates.forEach((mirror) => this.drawMirror(mirror));
+    this.visibleHintKeys = null;
   }
 
 
@@ -221,11 +223,26 @@ function drawSplitter(cell){
     }).setOrigin(0.5);
   }
 
+
+function mirrorKey(mirror){
+    return `${mirror.x},${mirror.y}`;
+  }
+
+function getVisibleHintKeys(){
+    if (!this.currentResult || this.remaining > this.stageSeconds * 0.42) return new Set();
+    const beamCells = new Set((this.currentResult.cells ?? []).map((cell) => `${cell.x},${cell.y}`));
+    const candidates = this.mirrorStates
+      .filter((mirror) => mirror.solutionType && mirror.type !== mirror.solutionType && beamCells.has(mirrorKey(mirror)))
+      .slice(0, 2)
+      .map(mirrorKey);
+    return new Set(candidates);
+  }
+
 function drawMirror(mirror){
     const center = cellCenter(mirror);
     const g = this.add.graphics();
     const isOnCurrentBeam = this.currentResult?.cells?.some((cell) => cell.x === mirror.x && cell.y === mirror.y);
-    const wantsHint = mirror.solutionType && mirror.type !== mirror.solutionType && isOnCurrentBeam && this.remaining <= this.stageSeconds * 0.42;
+    const wantsHint = this.visibleHintKeys?.has(`${mirror.x},${mirror.y}`) ?? false;
 
     if (wantsHint) {
       g.fillStyle(0xffe66d, 0.16).fillCircle(center.x, center.y, 34);
@@ -247,10 +264,10 @@ function drawMirror(mirror){
       g.beginPath().moveTo(center.x - 19, center.y - 19).lineTo(center.x + 19, center.y + 19).strokePath();
     }
     g.lineStyle(2, mirror.locked ? 0xffe66d : (wantsHint ? 0xffe66d : 0x6ee7ff), 0.8).strokeCircle(center.x, center.y, 25);
-    const marker = mirror.locked ? '固定' : '↻';
+    const marker = mirror.locked ? '固' : '↻';
     this.add.text(center.x, center.y + 31, marker, {
       fontFamily: 'Arial Black',
-      fontSize: mirror.locked ? 12 : 16,
+      fontSize: mirror.locked ? 11 : 16,
       color: mirror.locked ? '#ffe66d' : (wantsHint ? '#ffe66d' : '#6ee7ff'),
       stroke: '#02040e',
       strokeThickness: 4,
@@ -270,21 +287,43 @@ function clampBeamPoint(point){
     };
   }
 
+
+function beamOffsetFor(line){
+    const sourceNumber = Number(String(line.sourceId ?? '').replace(/\D/g, '')) || 1;
+    return (sourceNumber - 2) * 6;
+  }
+
+function offsetBeamPoints(from, to, line){
+    const offset = beamOffsetFor(line);
+    if (offset === 0) return { from, to };
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const ox = (-dy / length) * offset;
+    const oy = (dx / length) * offset;
+    return {
+      from: { x: from.x + ox, y: from.y + oy },
+      to: { x: to.x + ox, y: to.y + oy },
+    };
+  }
+
 function drawBeam(){
     if (!this.currentResult) return;
 
     const g = this.add.graphics();
     this.currentResult.lines.forEach((line) => {
       const color = LIGHT_COLOR_HEX[line.color] ?? 0x83fffd;
-      const from = clampBeamPoint(line.from);
-      const to = clampBeamPoint(line.to);
-      g.lineStyle(10, color, 0.14).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
+      const rawFrom = clampBeamPoint(line.from);
+      const rawTo = clampBeamPoint(line.to);
+      const { from, to } = offsetBeamPoints(rawFrom, rawTo, line);
+      g.lineStyle(10, color, 0.12).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
     });
     this.currentResult.lines.forEach((line) => {
-      const color = this.remaining <= 8 ? 0xffe66d : (LIGHT_COLOR_HEX[line.color] ?? 0x83fffd);
-      const from = clampBeamPoint(line.from);
-      const to = clampBeamPoint(line.to);
-      g.lineStyle(4, color, 0.9).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
+      const color = LIGHT_COLOR_HEX[line.color] ?? 0x83fffd;
+      const rawFrom = clampBeamPoint(line.from);
+      const rawTo = clampBeamPoint(line.to);
+      const { from, to } = offsetBeamPoints(rawFrom, rawTo, line);
+      g.lineStyle(5, color, 0.86).beginPath().moveTo(from.x, from.y).lineTo(to.x, to.y).strokePath();
     });
 
     this.drawRouteMarker();

@@ -131,6 +131,7 @@ export function startGame(
   parent: HTMLElement,
   partialSettings: Partial<GameSettings>,
   onFinish: (result: GameResult) => void,
+  onExit?: () => void,
 ) {
   // 二重起動を避けるため、前のPhaserインスタンスを先に破棄します。
   destroyGame()
@@ -156,6 +157,7 @@ export function startGame(
   game.scene.add('MirrorPartyScene', MirrorPartyScene, true, {
     settings,
     onFinish,
+    onExit,
   })
 
   return game

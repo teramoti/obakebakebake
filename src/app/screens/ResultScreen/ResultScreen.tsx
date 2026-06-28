@@ -46,6 +46,13 @@ function bestPlayerReason(player: PlayerResult) {
   return player.winReason ?? '勝因なし'
 }
 
+function resultGrade(score: number) {
+  if (score >= 54) return 'S'
+  if (score >= 40) return 'A'
+  if (score >= 24) return 'B'
+  return 'C'
+}
+
 // 順位カードで使う表彰アイコンを順位から選びます。
 function podiumIcon(rank: number) {
   if (rank === 1) return 'award-crown'
@@ -67,6 +74,7 @@ export default function ResultScreen({ result, onBack }: Props) {
           <h1>{champion ? `WINNER P${champion.player}` : 'RESULT'}</h1>
           <span>{result.roundCount} ROUND</span>
           {champion && <strong className="result-win-reason">勝因 {bestPlayerReason(champion)}</strong>}
+          {champion && <strong className="result-grade">総合ランク {resultGrade(champion.score)}</strong>}
         </header>
 
         {/* 上位3名を先に大きく見せ、結果画面を点数表だけにしないための表彰エリアです。 */}
@@ -108,7 +116,7 @@ export default function ResultScreen({ result, onBack }: Props) {
           <span><Icon name="mirror-slash" label="鏡" />省MOVE {lowestValue(ranking, 'rotations')}</span>
         </div>
 
-        <button className="result-title-button" onClick={onBack}>TITLE</button>
+        <button type="button" className="result-title-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); onBack(); }}>TITLE</button>
       </section>
     </main>
   )

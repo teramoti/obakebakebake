@@ -51,7 +51,7 @@ export function compactMission(mission) {
     ['おばけに当てずにクリア', 'おばけ回避'],
     ['ポータルを使ってクリア', 'ワープ'],
     ['パーフェクトを狙え', 'PERFECT'],
-    ['フィーバー中にクリア', 'FEVER'],
+    ['早くクリア', '速攻'],
   ]);
   return map.get(mission) ?? shortText(String(mission).replace('してクリア', '').replace('クリア', ''), 10);
 }

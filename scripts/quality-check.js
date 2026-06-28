@@ -126,7 +126,6 @@ function verifyMoveLimitsAndLedger() {
     score: 5,
     isPerfect: false,
     mission: true,
-    fever: false,
     breakdown: { event: 1 },
     movesLeft: 3,
   };
@@ -388,11 +387,14 @@ function verifyUiRefreshSource() {
   assert(gameUiSource.includes('HOW_TO_PAGES'), 'Phaser help should use the same HOW_TO_PAGES data as React');
   assert(sceneSource.includes("if (this.mode !== 'playing') return;"), 'H key should not hidden-toggle outside playing mode');
   assert(hudRendererSource.includes('drawScorePops()'), 'Scene should define drawScorePops used by drawPlaying');
+  assert(sceneSource.includes('FINISH_BUTTON_BOUNDS') && sceneSource.includes('TITLE_BUTTON_BOUNDS'), 'Playing screen should include manual FINISH and TITLE buttons');
+  assert(sceneSource.includes('FINISHで終了') && !sceneSource.includes('lockTurnAndFinish(300, true)'), 'Goal clear should wait for manual FINISH instead of auto-ending the turn');
+  assert(hudRendererSource.includes('最大') && hudRendererSource.includes('現在'), 'HUD should show current turn score and max score estimate');
   assert(gameUiSource.includes('this.tweens.add'), 'Scene should use tween animation for game-like motion');
   assert(effectsSource.includes('addConfettiRain()') && resultRendererSource.includes('addConfettiRain()'), 'Result should use animated confetti');
   assert(effectsSource.includes('addClearBurst()') && flowRendererSource.includes('addClearBurst()'), 'Clear handoff should use a burst effect');
   assert(gameUiSource.includes('playCountdown()'), 'Countdown SE should be used');
-  assert(gameUiSource.includes('playFever()'), 'Fever SE should be used');
+  assert(!gameUiSource.includes('playFever()'), 'Fever mechanic should be removed so early clear stays advantageous');
   assert(gameUiSource.includes('playRanking()'), 'Ranking SE should be used');
   assert(sceneSource.includes('GimmickDirector'), 'Scene should use GimmickDirector for live gimmick feedback');
   assert(sceneSource.includes('LiveTwistManager'), 'Scene should use LiveTwistManager for dynamic bonus targets');
@@ -466,13 +468,13 @@ function verifyUiRefreshSource() {
   assert(gameConfigSource.includes('cell: 76'), 'Board cells should be larger than the previous compact layout');
   assert(hudRendererSource.includes('ステージ名は隠し'), 'HUD should intentionally hide stage names during play');
   assert(flowRendererSource.includes('盤面を残し'), 'Player handoff should be a popup over the game board');
-  assert(flowRendererSource.includes('AUTO NEXT'), 'Player handoff should auto-count down instead of waiting on a button');
+  assert(flowRendererSource.includes('交代 3'), 'Player handoff should show a visible 3 count before auto transition');
   assert(flowRendererSource.includes('this.handoffAutoCall'), 'Handoff should store the auto transition timer');
   assert(!flowRendererSource.includes('targets: [panel, playerText, start], y:'), 'Turn intro should not tween player label to absolute top edge');
   assert(flowRendererSource.includes('P1/P2/P3/P4が画面上端からはみ出していました'), 'Turn intro should document the safe-area player label fix');
   assert(cssSource.includes('Safe-area fixes: turn intro player labels'), 'CSS should include HOW TO score page safe-area fixes');
 
-  assert(sceneSource.split('\n').length <= 440, 'MirrorPartyScene should stay compact after renderer split');
+  assert(sceneSource.split('\n').length <= 520, 'MirrorPartyScene should stay reasonably compact after renderer split');
   assert(boardRendererSource.includes('export default class BoardRenderer'), 'BoardRenderer class should exist');
   assert(hudRendererSource.includes('export default class HudRenderer'), 'HudRenderer class should exist');
   assert(flowRendererSource.includes('export default class FlowScreenRenderer'), 'FlowScreenRenderer class should exist');
@@ -524,8 +526,24 @@ function verifyUiRefreshSource() {
   assert(gameManagerSource.includes('MirrorPartyScene'), 'GameManager.ts should own Phaser scene creation');
   assert(resultScreenSource.includes('result-title-button'), 'ResultScreen should use a centered TITLE button');
   assert(resultScreenSource.includes('result-win-reason'), 'ResultScreen should include a winner reason badge');
+  assert(resultScreenSource.includes('resultGrade') && resultScreenSource.includes('result-grade'), 'ResultScreen should show an easy-to-read final grade badge');
   assert(resultScreenSource.includes('result-podium') && resultScreenSource.includes('podiumIcon'), 'ResultScreen should show a podium before the score table');
-  assert(startScreenSource.includes('title-hero') && startScreenSource.includes('title-feature-list'), 'StartScreen should include a strengthened title hero with game features');
+  assert(startScreenSource.includes('title-attract-simple'), 'StartScreen should use one simple attract demo instead of unclear top information rows');
+  assert(startScreenSource.includes('同じ色でCLEAR'), 'Title demo should explain the actual colored-goal rule');
+  assert(cssSource.includes('.title-attract-simple'), 'CSS should include simple title attract layout');
+  const howToSource = readFileSync(new URL('../src/game/data/howToGuide.js', import.meta.url), 'utf8');
+  assert(howToSource.includes("['wall', '壁'") && howToSource.includes("['portal', 'ワープ'"), 'HowTo should explain wall and portal objects');
+  assert(howToSource.includes("['beam-spark', '分岐'") && howToSource.includes("['ghost', 'おばけ'"), 'HowTo should explain splitter and ghost objects');
+
+  assert(startScreenSource.includes('selectedGuideIndex'), 'HowTo gimmick page should track the selected object explanation');
+  assert(startScreenSource.includes('click-guide-detail'), 'HowTo gimmick page should show a changing explanation detail panel');
+  assert(cssSource.includes('.selectable-card.active'), 'HowTo gimmick page should highlight the selected object card');
+  assert(startScreenSource.includes('manual-hint') && startScreenSource.includes('selectedGuide.role'), 'HowTo gimmick page should explain that selecting objects changes the detail text');
+  assert(howToSource.includes('interactions:'), 'HowTo data should include object-specific interaction explanations');
+  assert(howToSource.includes("title: 'ギミック'") && howToSource.includes("badge: 'GIMMICK'"), 'HowTo page 2 should be a gimmick explanation page, not only click rotation');
+  assert(howToSource.includes("['beam-spark', '分岐'") && howToSource.includes("['ghost', 'おばけ'"), 'HowTo gimmick page should include splitter and ghost explanations');
+  assert(boardRendererSource.includes('offsetBeamPoints') && boardRendererSource.includes('beamOffsetFor'), 'Multi-light beams should be offset so colors do not completely overlap');
+  assert(startScreenSource.includes('title-hero') && !startScreenSource.includes('title-feature-list'), 'StartScreen should keep the title hero but remove confusing top feature rows');
   assert(cssSource.includes('.title-hero'), 'CSS should include final title polish selector');
   const resultCssSource = readFileSync(new URL('../src/app/screens/ResultScreen/ResultScreen.css', import.meta.url), 'utf8');
   assert(resultCssSource.includes('.result-podium'), 'Result CSS should include final podium polish selector');
@@ -545,7 +563,9 @@ verifyTurnManager();
 function verifyUiSafeLayout() {
   const hud = readFileSync(new URL('../src/game/systems/HudRenderer.js', import.meta.url), 'utf8');
   const resultCss = readFileSync(new URL('../src/app/screens/ResultScreen/ResultScreen.css', import.meta.url), 'utf8');
-  assert(hud.includes('const HUD_X = 760') && hud.includes('盤面外の右側へ固定'), 'HUD should keep timer, moves and FEVER separated on the right side');
+  assert(hud.includes('const HUD_X = 760') && hud.includes('3ブロックへ分けます'), 'HUD should keep timer, moves and score preview on the right side without overlap');
+  assert(hud.includes('狙い・ギミック') && hud.includes('const HUD_H = 310'), 'HUD should separate live gimmick chips from the main score panel');
+  assert(hud.includes('const ACTION_Y = 590') && hud.includes('CHIP_Y + 38'), 'HUD action buttons and goal chips should be separated vertically');
   assert(resultCss.includes('.result-shell') && resultCss.includes('display: flex'), 'Result shell should be flex-centered');
 }
 
@@ -598,11 +618,11 @@ console.log(JSON.stringify({
   roundEvents: ROUND_EVENTS.length,
   scoreScale: 'small-integer',
   control: 'mirror-click-rotate-only',
-  uiRefresh: 'complete-title-result-polish',
+  uiRefresh: 'complete-game-readability-polish',
   assetFormat: 'png',
   devHmr: 'disabled',
   boardLayouts: Object.fromEntries(Object.entries(BOARD_LAYOUTS).map(([id, board]) => [id, `${board.cols}x${board.rows}`])),
-  puzzleEnhancement: 'color-lights-goals-splitter-replay-fixed-mirror-auto-handoff-drama-feedback-round-rules',
+  puzzleEnhancement: 'color-lights-goals-splitter-replay-fixed-mirror-review-fix-final-check',
   commentedSourceFiles,
   flowSimulations,
   polishedIconCount,

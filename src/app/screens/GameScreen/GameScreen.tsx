@@ -10,6 +10,7 @@ import './GameScreen.css'
 type Props = {
   settings: GameSettings
   onFinish: (result: GameResult) => void
+  onExit: () => void
 }
 
 /**
@@ -17,18 +18,18 @@ type Props = {
  * The GameManager owns Phaser creation and returns GameResult to App when all players finish.
  */
 // Phaserのmount/unmountだけを担当し、ゲーム本体のロジックはGameManagerへ任せます。
-export default function GameScreen({ settings, onFinish }: Props) {
+export default function GameScreen({ settings, onFinish, onExit }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (!hostRef.current) return undefined
 
-    startGame(hostRef.current, settings, onFinish)
+    startGame(hostRef.current, settings, onFinish, onExit)
 
     return () => {
       destroyGame()
     }
-  }, [settings, onFinish])
+  }, [settings, onFinish, onExit])
 
   return (
     <main className="app game-shell">

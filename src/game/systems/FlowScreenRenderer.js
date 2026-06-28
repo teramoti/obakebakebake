@@ -154,22 +154,22 @@ function showHandoff(){
       color: CYAN,
     }).setOrigin(0.5);
     this.ui.pill(510, 414, '', { bg: 0xffe66d, fg: '#061022', width: 260, height: 44, fontSize: 20, line: 0xffffff });
-    const countdownText = this.add.text(640, 436, 'AUTO NEXT 3', {
+    const countdownText = this.add.text(640, 436, '交代 3', {
       fontFamily: 'Arial Black',
       fontSize: 20,
       color: '#061022',
     }).setOrigin(0.5);
     this.tweens.add({ targets: countdownText, scaleX: 1.06, scaleY: 1.06, duration: 280, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
-    this.handoffExpiresAt = this.time.now + 1350;
+    this.handoffExpiresAt = this.time.now + 3600;
     this.handoffAutoCall?.remove(false);
-    this.handoffAutoCall = this.time.delayedCall(1350, () => {
+    this.handoffAutoCall = this.time.delayedCall(3600, () => {
       if (this.mode === 'handoff') this.nextTurn();
     });
-    this.time.delayedCall(450, () => {
-      if (this.mode === 'handoff') countdownText.setText('AUTO NEXT 2');
+    this.time.delayedCall(1200, () => {
+      if (this.mode === 'handoff') countdownText.setText('交代 2');
     });
-    this.time.delayedCall(900, () => {
-      if (this.mode === 'handoff') countdownText.setText('AUTO NEXT 1');
+    this.time.delayedCall(2400, () => {
+      if (this.mode === 'handoff') countdownText.setText('交代 1');
     });
 
     if (cleared) {

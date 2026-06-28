@@ -41,7 +41,7 @@ export default function App() {
   if (screen === 'game' && settings) {
     return (
       <Suspense fallback={<main className="app loading-shell">ゲーム読み込み中...</main>}>
-        <GameScreen settings={settings} onFinish={handleFinish} />
+        <GameScreen settings={settings} onFinish={handleFinish} onExit={handleBack} />
       </Suspense>
     )
   }

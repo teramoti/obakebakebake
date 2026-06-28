@@ -1,26 +1,18 @@
 ピカッと！おばけミラー
 
+概要:
+鏡をクリックで回転させ、ライトの光を同じ色のゴールへつなぐ交代制パズルミニゲームです。
+
 起動:
 1. npm install
 2. npm run dev
-3. ブラウザで表示
 
 確認:
 - npm run test:quality
 - npm run lint
 - npm run build
 
-ゲーム内容:
-- 鏡クリック回転のみ
-- 1〜4人
-- 3ラウンド固定
-- EASY / NORMAL / HARD
-- 色ライトを同じ色のゴールへつなぐ
-- NORMAL/HARDは複数ライト
-- HARDは分岐候補あり
-- ResultはGameManager.ts経由でReact側へ返す
-
-構成:
+主な構成:
 - src/app/App.tsx
 - src/app/screens/StartScreen/StartScreen.tsx
 - src/app/screens/GameScreen/GameScreen.tsx
@@ -29,41 +21,18 @@
 - src/game/scenes/MirrorPartyScene.js
 - src/game/systems/
 
+仕様:
+- 1〜4人対応
+- EASY / NORMAL / HARD
+- 3ラウンド固定
+- 操作は鏡クリック回転のみ
+- NORMAL/HARDは複数ライトと色ゴールあり
+- HARDは分岐・固定ミラーあり
+- FINISHで手動終了
+- ResultはGameManager.tsからReact側へ返却
+
 提出ZIPに含めないもの:
 - node_modules
 - dist
 - public
 - svg
-
-## 追加最終調整
-
-- 盤面セルを難易度別に再調整しました。
-  - EASY: 8x8 / cell 76
-  - NORMAL: 9x8 / cell 70
-  - HARD: 9x9 / cell 66
-- 右側HUDの位置と幅を再調整し、時間・回数・FEVER・色達成を同じパネル内で重なりにくくしました。
-- 小ボーナスチップの幅を広げ、右側の空白を使う構成にしました。
-- 光線が盤面外へ大きくはみ出して見える問題を抑えるため、描画時の線端を盤面内へクランプしました。
-- quality-checkにHUD位置と光線クランプのチェックを追加しました。
-面白さ調整: 色ちがい / あと何色 / 壁停止 / ぐるぐる / ナイスCLEAR のフィードバックを追加。
-
-追加調整:
-- 3ラウンドごとに狙いが変わるようにしました。
-- Resultで勝因を表示します。
-- CLEAR後のルートリプレイを強化しました。
-
-
-## 最新修正: Result勝因表示
-- React側ResultScreenに勝因バッジを追加しました。
-- Resultで各プレイヤーのROUND別点数を表示するようにしました。
-- Phaser終了後のReact Result画面で bgm-result / ranking / award 音を再生する処理を追加しました。
-- test:quality / lint / build が通ることを確認しています。
-
-## Illustration polish
-- resources/icons の主要PNGを透明背景・グロー付きのゲーム用イラストへ差し替え済み。
-- SVG、public、dist、node_modules は提出ZIPに含めない。
-
-[画面強化]
-タイトル: ロゴ + ゲーム要素チップ + アトラクトデモ
-Result: 上位表彰エリア + 順位表 + ROUND別点数
-コメント: src/scripts 全ソースに責務コメントあり

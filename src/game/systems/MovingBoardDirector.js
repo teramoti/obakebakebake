@@ -43,7 +43,7 @@ export default class MovingBoardDirector {
     this.stage = stage;
     this.seed = (roundIndex + 3) * 19 + (playerIndex + 5) * 29 + (event?.id?.length ?? 0) * 11;
     this.goalPeriodMs = event?.id === 'speedBonus' ? 1500 : 1900;
-    this.chaserPeriodMs = event?.id === 'feverFinale' ? 1050 : 1250;
+    this.chaserPeriodMs = event?.id === 'finalSprint' ? 1050 : 1250;
 
     const solutionMirrors = mirrorStates.map((mirror) => ({
       ...mirror,

@@ -66,7 +66,8 @@
   font-weight: 1000;
 }
 
-.result-win-reason {
+.result-win-reason,
+.result-grade {
   grid-column: 1 / -1;
   display: inline-flex;
   width: fit-content;
@@ -356,7 +357,8 @@
   .result-header h1 {
     font-size: 36px;
   }
-  .result-win-reason {
+  .result-win-reason,
+.result-grade {
     display: none;
   }
   .podium-card {
@@ -369,4 +371,9 @@
   .result-row {
     min-height: 52px;
   }
+}
+
+.result-grade {
+  color: #061022;
+  background: linear-gradient(180deg, #6ee7ff, #ffffff);
 }

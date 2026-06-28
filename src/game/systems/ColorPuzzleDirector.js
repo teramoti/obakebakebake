@@ -264,7 +264,9 @@ export function enhanceStageForDifficulty(stage, difficultyId, board) {
     goal: { ...stage.goal, id: 'goal-1', color: 'yellow', label: '黄' },
     mirrors: stage.mirrors.map((mirror) => ({ ...mirror })),
     crystals: stage.crystals.map(cloneCell),
-    ghosts: stage.ghosts.map(cloneCell),
+    // 固定おばけはランダム配置で解法と無関係になりやすいため、
+    // 完成版では動く回避目標に一本化します。
+    ghosts: [],
     walls: stage.walls.map(cloneCell),
     portals: stage.portals.map((portal) => ({ ...portal, to: cloneCell(portal.to) })),
     splitters: [],

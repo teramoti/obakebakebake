@@ -9,11 +9,13 @@ import { PLAYER_COLORS, PLAYER_NAMES } from '../data/gameConfig.js';
 import { CYAN, GOLD, MUTED, PANEL, formatScore } from './sceneUiHelpers.js';
 
 const HUD_X = 760;
-const HUD_Y = 54;
+const HUD_Y = 42;
 const HUD_W = 470;
-const HUD_H = 274;
+const HUD_H = 310;
 const CHIP_X = 770;
-const CHIP_Y = 352;
+const CHIP_Y = 360;
+const ACTION_Y = 590;
+const TITLE_X = 1016;
 
 /**
  * プレイ中の情報表示、スコアポップ、ゲーム内ヘルプを担当します。
@@ -36,36 +38,38 @@ function drawHud(){
   const playerName = PLAYER_NAMES[this.currentPlayerIndex];
   const playerColor = PLAYER_COLORS[this.currentPlayerIndex];
   const movesLeft = this.moveLimitManager.getMovesLeft(this.turnRotations, this.maxMoves);
-  const feverWindow = Math.min(8, Math.floor(this.stageSeconds * 0.42));
-  const fever = this.remaining <= feverWindow;
   const secondsLeft = Math.ceil(this.remaining);
   const progress = Math.max(0, Math.min(1, this.remaining / this.stageSeconds));
   const colorNeeded = this.currentResult?.requiredEmitters ?? 1;
   const colorDone = this.currentResult?.matchedEmitters ?? (this.currentResult?.reachedGoal ? 1 : 0);
+  const scorePreview = this.getCurrentScorePreview?.() ?? { score: 0 };
+  const maxScore = this.getMaxTurnScore?.() ?? 0;
+  const isReadyToFinish = Boolean(this.currentResult?.reachedGoal);
 
-  // HUDは盤面外の右側へ固定します。盤面上に重ねると、光線や鏡の視認性が落ちるためです。
+  // 右側HUDは「状態」「狙い」「操作ボタン」の3ブロックへ分けます。
+  // 以前はスコア行と狙いチップが同じ高さに重なり、画面が読みにくくなっていました。
   this.ui.panel(HUD_X, HUD_Y, HUD_W, HUD_H, {
     fill: 0x080b1e,
-    alpha: 0.93,
-    line: fever ? 0xffe66d : 0x6ee7ff,
-    lineAlpha: 0.7,
+    alpha: 0.94,
+    line: isReadyToFinish ? 0x7dff96 : 0x6ee7ff,
+    lineAlpha: 0.68,
     lineWidth: 4,
     radius: 26,
   });
 
   this.add.text(HUD_X + 26, HUD_Y + 22, playerName, {
     fontFamily: 'Arial Black',
-    fontSize: 42,
+    fontSize: 40,
     color: playerColor,
     stroke: '#050718',
     strokeThickness: 7,
   });
-  this.add.text(HUD_X + 116, HUD_Y + 34, `${formatScore(currentPlayer.totalScore)}点`, {
+  this.add.text(HUD_X + 110, HUD_Y + 32, `${formatScore(currentPlayer.totalScore)}点`, {
     fontFamily: 'Arial Black',
-    fontSize: 22,
+    fontSize: 21,
     color: '#ffffff',
   });
-  this.ui.pill(HUD_X + HUD_W - 118, HUD_Y + 24, `R${this.roundIndex + 1}/3`, {
+  this.ui.pill(HUD_X + HUD_W - 116, HUD_Y + 24, `R${this.roundIndex + 1}/3`, {
     bg: 0xffe66d,
     fg: '#061022',
     width: 92,
@@ -74,72 +78,98 @@ function drawHud(){
     line: 0xffffff,
   });
 
-  this.add.text(HUD_X + 28, HUD_Y + 92, `${secondsLeft}`, {
+  this.add.text(HUD_X + 34, HUD_Y + 82, `${secondsLeft}`, {
     fontFamily: 'Arial Black',
-    fontSize: 64,
-    color: fever ? GOLD : '#ffffff',
+    fontSize: 66,
+    color: secondsLeft <= 3 ? GOLD : '#ffffff',
     stroke: '#050718',
     strokeThickness: 9,
   });
-  this.add.text(HUD_X + 116, HUD_Y + 121, '秒', {
+  this.add.text(HUD_X + 128, HUD_Y + 116, '秒', {
     fontFamily: 'Arial Black',
     fontSize: 20,
     color: MUTED,
   });
 
-  this.ui.panel(HUD_X + 210, HUD_Y + 86, 210, 70, {
+  this.ui.panel(HUD_X + 230, HUD_Y + 84, 190, 72, {
     fill: 0x101a3e,
     alpha: 0.96,
     line: movesLeft <= 2 ? 0xffe66d : 0x6ee7ff,
     lineAlpha: 0.52,
     radius: 18,
   });
-  this.add.text(HUD_X + 315, HUD_Y + 103, '回数', {
+  this.add.text(HUD_X + 325, HUD_Y + 101, '回数', {
     fontFamily: 'Arial Black',
-    fontSize: 15,
+    fontSize: 14,
     color: MUTED,
   }).setOrigin(0.5);
-  this.add.text(HUD_X + 315, HUD_Y + 130, `${movesLeft}/${this.maxMoves}`, {
+  this.add.text(HUD_X + 325, HUD_Y + 129, `${movesLeft}/${this.maxMoves}`, {
     fontFamily: 'Arial Black',
-    fontSize: 26,
+    fontSize: 28,
     color: movesLeft <= 2 ? GOLD : '#ffffff',
   }).setOrigin(0.5);
 
-  this.ui.panel(HUD_X + 28, HUD_Y + 172, 390, 48, {
+  this.ui.panel(HUD_X + 28, HUD_Y + 170, 392, 44, {
     fill: 0x101a3e,
     alpha: 0.96,
     line: colorDone >= colorNeeded ? 0x7dff96 : 0x6ee7ff,
     lineAlpha: 0.44,
-    radius: 16,
+    radius: 15,
   });
-  this.add.image(HUD_X + 54, HUD_Y + 196, 'icon-flashlight').setDisplaySize(24, 24);
-  this.add.text(HUD_X + 80, HUD_Y + 187, colorNeeded > 1 ? `色 ${colorDone}/${colorNeeded}` : 'ゴールへ', {
+  this.add.image(HUD_X + 54, HUD_Y + 192, 'icon-flashlight').setDisplaySize(22, 22);
+  this.add.text(HUD_X + 82, HUD_Y + 183, colorNeeded > 1 ? `色 ${colorDone}/${colorNeeded}` : 'ゴールへ', {
     fontFamily: 'Arial Black',
-    fontSize: 17,
+    fontSize: 16,
     color: colorDone >= colorNeeded ? '#7dff96' : '#ffffff',
   });
-  const dramaLabel = this.currentDramaState?.label ?? '鏡クリックだけ';
+  const dramaLabel = this.currentDramaState?.label ?? '鏡を回す';
   const dramaColor = this.currentDramaState?.tone === 'danger' ? '#ffb4ea' : (this.currentDramaState?.tone === 'clear' ? '#7dff96' : CYAN);
-  this.add.text(HUD_X + 250, HUD_Y + 187, dramaLabel, {
+  this.add.text(HUD_X + 250, HUD_Y + 183, dramaLabel, {
     fontFamily: 'Arial Black',
     fontSize: dramaLabel.length >= 8 ? 13 : 15,
     color: dramaColor,
   });
 
-  const bar = this.add.graphics();
-  bar.fillStyle(0x182147, 0.95).fillRoundedRect(HUD_X + 28, HUD_Y + 238, 390, 10, 5);
-  bar.fillStyle(fever ? 0xffe66d : 0x6ee7ff, 0.96).fillRoundedRect(HUD_X + 28, HUD_Y + 238, 390 * progress, 10, 5);
+  this.ui.panel(HUD_X + 28, HUD_Y + 228, 392, 52, {
+    fill: 0x101a3e,
+    alpha: 0.96,
+    line: 0xffe66d,
+    lineAlpha: 0.42,
+    radius: 15,
+  });
+  this.add.text(HUD_X + 52, HUD_Y + 241, '現在', { fontFamily: 'Arial Black', fontSize: 13, color: MUTED });
+  this.add.text(HUD_X + 52, HUD_Y + 260, `${scorePreview.score}点`, { fontFamily: 'Arial Black', fontSize: 20, color: GOLD });
+  this.add.text(HUD_X + 162, HUD_Y + 241, '最大', { fontFamily: 'Arial Black', fontSize: 13, color: MUTED });
+  this.add.text(HUD_X + 162, HUD_Y + 260, `${maxScore}点`, { fontFamily: 'Arial Black', fontSize: 20, color: '#ffffff' });
+  this.add.text(HUD_X + 270, HUD_Y + 241, '狙い', { fontFamily: 'Arial Black', fontSize: 13, color: MUTED });
+  this.add.text(HUD_X + 270, HUD_Y + 260, this.currentRoundRule?.label ?? 'CLEAR', {
+    fontFamily: 'Arial Black',
+    fontSize: String(this.currentRoundRule?.label ?? 'CLEAR').length >= 7 ? 13 : 16,
+    color: CYAN,
+  });
 
-  if (fever) {
-    this.ui.pill(HUD_X + 330, HUD_Y + 58, 'FEVER', {
-      bg: 0xffe66d,
-      fg: '#061022',
-      width: 104,
-      height: 30,
-      fontSize: 15,
-      line: 0xffffff,
-    });
-  }
+  const bar = this.add.graphics();
+  bar.fillStyle(0x182147, 0.95).fillRoundedRect(HUD_X + 28, HUD_Y + 294, 392, 9, 5);
+  bar.fillStyle(secondsLeft <= 3 ? 0xffe66d : 0x6ee7ff, 0.96).fillRoundedRect(HUD_X + 28, HUD_Y + 294, 392 * progress, 9, 5);
+
+  const finishBg = isReadyToFinish ? 0x7dff96 : 0x26305e;
+  const finishFg = isReadyToFinish ? '#061022' : '#ffffff';
+  this.ui.pill(784, ACTION_Y, isReadyToFinish ? 'FINISH' : '未達成', {
+    bg: finishBg,
+    fg: finishFg,
+    width: 214,
+    height: 58,
+    fontSize: 22,
+    line: isReadyToFinish ? 0xffffff : 0x6ee7ff,
+  });
+  this.ui.pill(TITLE_X, ACTION_Y, 'TITLE', {
+    bg: 0x26305e,
+    fg: '#ffffff',
+    width: 188,
+    height: 58,
+    fontSize: 21,
+    line: 0xffffff,
+  });
 }
 
 function drawGimmickBadges(){
@@ -163,14 +193,14 @@ function drawGimmickBadges(){
 
   badges = [ruleBadge, ...dramaBadges, ...boardBadges, ...twistBadges, ...badges].filter(Boolean).slice(0, 6);
 
-  this.ui.panel(CHIP_X - 12, CHIP_Y - 28, 452, 226, {
+  this.ui.panel(CHIP_X - 10, CHIP_Y - 12, 450, 190, {
     fill: PANEL,
-    alpha: 0.7,
+    alpha: 0.86,
     line: 0x6ee7ff,
-    lineAlpha: 0.26,
+    lineAlpha: 0.36,
     radius: 22,
   });
-  this.add.text(CHIP_X, CHIP_Y - 18, '今の狙い', {
+  this.add.text(CHIP_X + 12, CHIP_Y + 6, '狙い・ギミック', {
     fontFamily: 'Arial Black',
     fontSize: 16,
     color: GOLD,
@@ -178,13 +208,13 @@ function drawGimmickBadges(){
 
   badges.forEach((badge, index) => {
     const x = CHIP_X + (index % 2) * 216;
-    const y = CHIP_Y + 16 + Math.floor(index / 2) * 55;
+    const y = CHIP_Y + 38 + Math.floor(index / 2) * 44;
     const lineColor = badge.tone === 'danger' ? 0xff75d8 : (badge.tone === 'special' ? 0xffe66d : 0x6ee7ff);
-    this.ui.panel(x, y, 198, 42, { fill: 0x0b1230, alpha: 0.88, line: lineColor, lineAlpha: 0.58, radius: 14 });
-    this.add.image(x + 24, y + 21, `icon-${badge.icon}`).setDisplaySize(22, 22);
-    this.add.text(x + 110, y + 21, badge.label, {
+    this.ui.panel(x, y, 198, 34, { fill: 0x0b1230, alpha: 0.9, line: lineColor, lineAlpha: 0.58, radius: 13 });
+    this.add.image(x + 23, y + 17, `icon-${badge.icon}`).setDisplaySize(19, 19);
+    this.add.text(x + 108, y + 17, badge.label, {
       fontFamily: 'Arial Black',
-      fontSize: badge.label.length >= 7 ? 13 : 15,
+      fontSize: badge.label.length >= 7 ? 12 : 14,
       color: badge.tone === 'danger' ? '#ffb4ea' : '#ffffff',
     }).setOrigin(0.5);
   });
@@ -196,11 +226,11 @@ function drawReactionBanner(){
   if (age > 1100) return;
   const alpha = Phaser.Math.Clamp(1 - age / 1100, 0, 1);
   const g = this.add.graphics();
-  g.fillStyle(0x0b1230, 0.84 * alpha).fillRoundedRect(780, 594, 440, 50, 18);
-  g.lineStyle(3, 0xffe66d, 0.72 * alpha).strokeRoundedRect(780, 594, 440, 50, 18);
-  this.add.text(1000, 619, this.reactionText, {
+  g.fillStyle(0x0b1230, 0.84 * alpha).fillRoundedRect(780, 536, 440, 42, 16);
+  g.lineStyle(3, 0xffe66d, 0.72 * alpha).strokeRoundedRect(780, 536, 440, 42, 16);
+  this.add.text(1000, 557, this.reactionText, {
     fontFamily: 'Arial Black',
-    fontSize: 20,
+    fontSize: 18,
     color: '#ffe66d',
     stroke: '#050718',
     strokeThickness: 5,

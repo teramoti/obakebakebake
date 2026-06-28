@@ -17,7 +17,6 @@ export type ScoreBreakdown = {
   crystals?: number
   mission?: number
   perfect?: number
-  fever?: number
   event?: number
   live?: number
   rule?: number

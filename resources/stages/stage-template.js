@@ -6,7 +6,7 @@ export const stageTemplate = {
   id: 'new-stage-id',
   name: '新ステージ名',
   mission: 'ミッション説明',
-  missionType: 'crystals', // crystals / portal / noGhost / lowRotate / fever / perfect
+  missionType: 'crystals', // crystals / portal / noGhost / lowRotate / speed / perfect
   par: 4,
   emitter: { x: 0, y: 3, dir: 'right' },
   goal: { x: 7, y: 3 },

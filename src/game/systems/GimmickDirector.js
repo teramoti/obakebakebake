@@ -16,7 +16,7 @@ export default class GimmickDirector {
       cleanBonus: 0,
       perfectShow: -1,
       comebackLight: 1,
-      feverFinale: 0,
+      finalSprint: -1,
     };
     return table[this.event.id] ?? 0;
   }
@@ -30,7 +30,7 @@ export default class GimmickDirector {
       cleanBonus: 'おばけ回避',
       perfectShow: '少ない回転',
       comebackLight: '逆転チャンス',
-      feverFinale: '終盤ボーナス',
+      finalSprint: '速攻ラスト',
     };
     return table[this.event.id] ?? this.event.shortLabel ?? 'イベント';
   }

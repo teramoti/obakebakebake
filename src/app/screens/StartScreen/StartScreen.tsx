@@ -30,6 +30,8 @@ const compactModeLabel = (id: string, label: string) => {
   return label
 }
 
+const roundSeconds = (totalSeconds: number) => Math.floor(totalSeconds / 3)
+
 const demoRouteCells = [
   ['flashlight', 'beam-spark', 'mirror-slash', 'beam-spark', 'target-door'],
   ['', '', 'beam-spark', '', ''],
@@ -52,33 +54,30 @@ function DemoCell({ type, highlight = false }: { type: string; highlight?: boole
   )
 }
 
-// タイトル画面でゲーム内容が伝わるよう、ミニ盤面デモを表示します。
+// タイトル上部は読ませる情報を減らし、ゲーム内容だけを動く見本で伝えます。
 function TitleAttractPreview({ settings }: { settings: GameSettings }) {
   const difficulty = DIFFICULTY_SETTINGS[settings.difficulty] ?? DIFFICULTY_SETTINGS.normal
 
   return (
-    <div className="title-attract" aria-label="ゲームの流れ">
-      <div className="attract-chip">
-        <Icon name="player-badge" label="プレイヤー" />
-        <div><b>{settings.playerCount}人</b><span>3R交代</span></div>
-      </div>
-
+    <div className="title-attract title-attract-simple" aria-label="ゲームの流れ">
       <div className="attract-route attract-mini-board" aria-label="タイトルの盤面デモ">
         <span className="attract-cell"><Icon name="flashlight" label="黄ライト" /></span>
         <span className="attract-cell beam-cell" />
+        <span className="attract-cell"><Icon name="mirror-slash" label="鏡" /></span>
+        <span className="attract-cell beam-cell" />
         <span className="attract-cell"><Icon name="target-door" label="黄ゴール" /></span>
         <span className="attract-cell"><Icon name="flashlight" label="青ライト" /></span>
-        <span className="attract-cell"><Icon name="mirror-slash" label="鏡" /></span>
+        <span className="attract-cell beam-cell" />
+        <span className="attract-cell"><Icon name="mirror-backslash" label="鏡" /></span>
+        <span className="attract-cell beam-cell" />
         <span className="attract-cell"><Icon name="target-door" label="青ゴール" /></span>
         <span className="attract-beam attract-beam-yellow" />
         <span className="attract-beam attract-beam-cyan" />
-        <span className="attract-clear">CLEAR!</span>
+        <span className="attract-clear">同じ色でCLEAR</span>
       </div>
-
-      <div className="attract-chip attract-risk">
-        <Icon name="target-door" label="ボーナス門" />
-        <Icon name="ghost" label="おばけ回避" />
-        <div><b>{difficulty.boardLabel}</b><span>盤面</span></div>
+      <div className="attract-caption">
+        <strong>{settings.playerCount}人 / 3R / {difficulty.name}</strong>
+        <span>鏡クリックだけで光をつなぐ</span>
       </div>
     </div>
   )
@@ -153,12 +152,20 @@ function PracticeBoard() {
 // 3ページ式の遊び方モーダルです。説明文より動く見本を優先します。
 function HowToModal({ onClose }: { onClose: () => void }) {
   const [pageIndex, setPageIndex] = useState(0)
+  const [selectedGuideIndex, setSelectedGuideIndex] = useState(0)
   const page = HOW_TO_PAGES[pageIndex]
   const isFirst = pageIndex === 0
   const isLast = pageIndex === HOW_TO_PAGES.length - 1
+  const selectedGuide = page.interactions?.[selectedGuideIndex]
 
-  const goBack = () => setPageIndex((current) => Math.max(0, current - 1))
-  const goNext = () => setPageIndex((current) => Math.min(HOW_TO_PAGES.length - 1, current + 1))
+  // ページを切り替えた時は、説明カードの選択も先頭に戻します。
+  const setManualPage = (index: number) => {
+    setPageIndex(index)
+    setSelectedGuideIndex(0)
+  }
+
+  const goBack = () => setManualPage(Math.max(0, pageIndex - 1))
+  const goNext = () => setManualPage(Math.min(HOW_TO_PAGES.length - 1, pageIndex + 1))
 
   return (
     <div className="howto-overlay" role="dialog" aria-modal="true" aria-label="遊び方説明">
@@ -178,7 +185,7 @@ function HowToModal({ onClose }: { onClose: () => void }) {
             <button
               className={index === pageIndex ? 'manual-tab active' : 'manual-tab'}
               key={item.number}
-              onClick={() => setPageIndex(index)}
+              onClick={() => setManualPage(index)}
               aria-label={`遊び方 ${item.number}ページ目`}
             >
               <b>{item.number}</b>
@@ -192,15 +199,47 @@ function HowToModal({ onClose }: { onClose: () => void }) {
 
           <div className="manual-copy">
             <p>{page.lead}</p>
-            <div className="manual-card-row" aria-label="ページ内の説明カード">
-              {page.cards.map(([icon, title, text]: [string, string, string]) => (
-                <div className="manual-mini-card" key={`${page.number}-${title}`}>
-                  <div className="manual-card-icon"><Icon name={icon} label={title} /></div>
-                  <strong>{title}</strong>
-                  <span>{text}</span>
-                </div>
-              ))}
+            {page.number === 2 && <p className="manual-hint">下のギミックを選ぶと、右側の説明が切り替わります。</p>}
+            <div className={page.number === 2 ? 'manual-card-row selectable' : 'manual-card-row'} aria-label="ページ内の説明カード">
+              {page.cards.map(([icon, title, text]: [string, string, string], index: number) => {
+                if (page.number === 2) {
+                  return (
+                    <button
+                      className={index === selectedGuideIndex ? 'manual-mini-card selectable-card active' : 'manual-mini-card selectable-card'}
+                      key={`${page.number}-${title}`}
+                      onClick={() => setSelectedGuideIndex(index)}
+                      aria-pressed={index === selectedGuideIndex}
+                    >
+                      <div className="manual-card-icon"><Icon name={icon} label={title} /></div>
+                      <strong>{title}</strong>
+                      <span>{text}</span>
+                    </button>
+                  )
+                }
+
+                return (
+                  <div className="manual-mini-card" key={`${page.number}-${title}`}>
+                    <div className="manual-card-icon"><Icon name={icon} label={title} /></div>
+                    <strong>{title}</strong>
+                    <span>{text}</span>
+                  </div>
+                )
+              })}
             </div>
+
+            {page.number === 2 && selectedGuide && (
+              <div className="click-guide-detail" aria-live="polite">
+                <div className="click-guide-main">
+                  <Icon name={selectedGuide.icon} label={selectedGuide.title} />
+                  <div>
+                    <strong>{selectedGuide.title}</strong>
+                    <span>{selectedGuide.role} / {selectedGuide.action}</span>
+                  </div>
+                </div>
+                <p>{selectedGuide.result}</p>
+                <em>{selectedGuide.tip}</em>
+              </div>
+            )}
 
             {page.number === 2 && <PracticeBoard />}
 
@@ -246,20 +285,9 @@ export default function StartScreen({ onStart }: Props) {
           <img className="title-logo-image" src={iconUrlForTitle()} alt="ピカッと！おばけミラー" draggable="false" />
           <div className="title-copy">
             <p>LIGHT ROUTE PUZZLE</p>
-            <h1>光をそろえて3R勝負</h1>
-            <div className="title-feature-list" aria-label="ゲーム要素">
-              <span><Icon name="flashlight" label="色ライト" />色ライト</span>
-              <span><Icon name="mirror-slash" label="鏡" />鏡回転</span>
-              <span><Icon name="target-door" label="出口" />同色ゴール</span>
-            </div>
+            <h1>光を色ゴールへ</h1>
           </div>
         </header>
-
-        <div className="title-rules" aria-label="基本ルール">
-          <span><Icon name="mirror-slash" label="鏡" />回転</span>
-          <span><Icon name="beam-spark" label="光" />接続</span>
-          <span><Icon name="target-door" label="出口" />ゴール</span>
-        </div>
 
         <TitleAttractPreview settings={settings} />
 
@@ -288,7 +316,7 @@ export default function StartScreen({ onStart }: Props) {
           </section>
 
           <section className="menu-panel time-panel" aria-label="制限時間">
-            <span className="menu-label">時間</span>
+            <span className="menu-label">1R時間</span>
             <div className="time-grid">
               {TIME_OPTIONS.map((seconds: number) => (
                 <button
@@ -296,10 +324,10 @@ export default function StartScreen({ onStart }: Props) {
                   aria-pressed={settings.totalSeconds === seconds}
                   key={seconds}
                   onClick={() => applySettings({ totalSeconds: seconds })}
-                  aria-label={`${seconds}秒`}
+                  aria-label={`${roundSeconds(seconds)}秒 1ラウンド`}
                 >
-                  <b>{seconds}</b>
-                  <span>秒</span>
+                  <b>{roundSeconds(seconds)}</b>
+                  <span>秒/R</span>
                 </button>
               ))}
             </div>

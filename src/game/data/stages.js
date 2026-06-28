@@ -795,8 +795,8 @@ export const STAGES = [
   {
     "id": "clock-tower",
     "name": "時計塔の光",
-    "mission": "フィーバー中にクリア",
-    "missionType": "fever",
+    "mission": "早くクリア",
+    "missionType": "speed",
     "par": 5,
     "emitter": {
       "x": 0,
@@ -1268,8 +1268,8 @@ export const STAGES = [
   {
     "id": "comet-room",
     "name": "コメットルーム",
-    "mission": "フィーバー中にクリア",
-    "missionType": "fever",
+    "mission": "早くクリア",
+    "missionType": "speed",
     "par": 5,
     "emitter": {
       "x": 0,
@@ -1729,8 +1729,8 @@ export const STAGES = [
   {
     "id": "spiral-stage",
     "name": "スパイラル舞台",
-    "mission": "フィーバー中にクリア",
-    "missionType": "fever",
+    "mission": "早くクリア",
+    "missionType": "speed",
     "par": 7,
     "emitter": {
       "x": 0,
@@ -2210,8 +2210,8 @@ export const STAGES = [
   {
     "id": "aurora-line",
     "name": "オーロラライン",
-    "mission": "フィーバー中にクリア",
-    "missionType": "fever",
+    "mission": "早くクリア",
+    "missionType": "speed",
     "par": 7,
     "emitter": {
       "x": 0,

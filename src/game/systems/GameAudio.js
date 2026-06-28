@@ -24,7 +24,6 @@ export default class GameAudio {
   playPerfect() { this.play('perfect', 0.32); }
   playAward() { this.play('award', 0.36); }
   playCountdown() { this.play('countdown', 0.3); }
-  playFever() { this.play('fever', 0.32); }
   playRanking() { this.play('ranking', 0.3); }
 
   /** Stop the previous loop and start the requested BGM loop. */

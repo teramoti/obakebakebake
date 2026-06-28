@@ -8,7 +8,7 @@ import { BOARD, DIFFICULTY_SETTINGS, ROUND_EVENTS, applyBoardLayout } from '../d
 import TurnManager from '../systems/TurnManager.js';
 import TurnResultContext from '../systems/TurnResultContext.js';
 import GameAudio from '../systems/GameAudio.js';
-import { calculateScore, createEmptyPlayer } from '../systems/scoreSystem.js';
+import { calculateScore, createEmptyPlayer, estimateMaxScore } from '../systems/scoreSystem.js';
 import MoveLimitManager from '../systems/MoveLimitManager.js';
 import ScoreLedger from '../systems/ScoreLedger.js';
 import ResultAwardFactory from '../systems/ResultAwardFactory.js';
@@ -30,11 +30,19 @@ import { enhanceStageForDifficulty } from '../systems/ColorPuzzleDirector.js';
 import PuzzleDramaDirector from '../systems/PuzzleDramaDirector.js';
 import RoundRuleDirector from '../systems/RoundRuleDirector.js';
 import TurnFeedbackDirector from '../systems/TurnFeedbackDirector.js';
+const FINISH_BUTTON_BOUNDS = { x: 784, y: 590, w: 214, h: 58 };
+const TITLE_BUTTON_BOUNDS = { x: 1016, y: 590, w: 188, h: 58 };
+
+function inBounds(pointer, rect) {
+  return pointer.x >= rect.x && pointer.x <= rect.x + rect.w && pointer.y >= rect.y && pointer.y <= rect.y + rect.h;
+}
+
 export default class MirrorPartyScene extends Phaser.Scene {
   // React側から渡された設定と終了コールバックをScene内へ保持します。
   init(data) {
     this.settings = data.settings;
     this.onFinish = data.onFinish;
+    this.onExit = data.onExit;
   }
   // PNGアイコンとBGM/SEをPhaserのキャッシュへ読み込みます。
   preload() {
@@ -52,7 +60,6 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.load.audio('bgm-play', audioUrl('bgm-play'));
     this.load.audio('bgm-result', audioUrl('bgm-result'));
     this.load.audio('countdown', audioUrl('countdown'));
-    this.load.audio('fever', audioUrl('fever'));
     this.load.audio('ranking', audioUrl('ranking'));
   }
   // 難易度、ターン管理、Renderer、Audioなどを初期化してREADY画面へ入ります。
@@ -103,7 +110,6 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.turnClosing = false;
     this.helpPageIndex = 0;
     this.lastCountdownSecond = null;
-    this.feverPlayed = false;
     this.reactionText = '';
     this.reactionBorn = 0;
     this.currentDramaState = null;
@@ -121,42 +127,35 @@ export default class MirrorPartyScene extends Phaser.Scene {
     });
     this.input.keyboard.on('keydown-LEFT', () => this.hudRenderer.changeHelpPage(-1));
     this.input.keyboard.on('keydown-RIGHT', () => this.hudRenderer.changeHelpPage(1));
-    this.input.keyboard.on('keydown-ESC', () => this.finishGame());
+    this.input.keyboard.on('keydown-ESC', () => this.exitToTitle());
     this.audio.playStart();
     this.showReadyScreen();
   }
-  // プレイ中だけ毎フレーム残り時間・光線・自動CLEAR判定を更新します。
+  // プレイ中は残り時間と光線を更新します。CLEAR後も手動終了まで粘れるようにします。
   update() {
     if (this.mode !== 'playing') return;
     const elapsed = (this.time.now - this.startTime) / 1000;
     this.remaining = Math.max(0, this.stageSeconds - elapsed);
-    const feverWindow = Math.min(8, Math.floor(this.stageSeconds * 0.42));
     const secondsLeft = Math.ceil(this.remaining);
-    if (!this.feverPlayed && this.remaining <= feverWindow) {
-      this.feverPlayed = true;
-      this.audio.playFever();
-    }
     if (secondsLeft > 0 && secondsLeft <= 3 && secondsLeft !== this.lastCountdownSecond) {
       this.lastCountdownSecond = secondsLeft;
       this.audio.playCountdown();
     }
     if (this.remaining <= 0) {
-      this.finishTurn(false);
+      this.finishTurn(Boolean(this.currentResult?.reachedGoal));
       return;
     }
     if (Math.floor(this.time.now / 100) !== this.lastHudTick) {
       this.lastHudTick = Math.floor(this.time.now / 100);
       this.updateBeam();
       this.drawPlaying();
-      if (!this.turnClosing && this.currentResult.reachedGoal) {
-        this.lockTurnAndFinish(240, true);
-      }
     }
   }
   handleSpace() {
     if (this.mode === 'ready') this.showTurnIntro();
     else if (this.mode === 'intro') this.startTurn();
     else if (this.mode === 'handoff') this.nextTurn();
+    else if (this.mode === 'playing' && this.currentResult?.reachedGoal) this.finishTurn(true);
     else if (this.mode === 'result') this.finishGame();
   }
   handlePointer(pointer) {
@@ -179,6 +178,21 @@ export default class MirrorPartyScene extends Phaser.Scene {
       return;
     }
     if (this.mode !== 'playing' || this.turnClosing || this.showHelpOverlay) return;
+    if (inBounds(pointer, TITLE_BUTTON_BOUNDS)) {
+      this.exitToTitle();
+      return;
+    }
+    if (inBounds(pointer, FINISH_BUTTON_BOUNDS)) {
+      if (this.currentResult?.reachedGoal) {
+        this.finishTurn(true);
+      } else {
+        this.audio.playHint();
+        this.reactionText = 'まだゴール未達成';
+        this.reactionBorn = this.time.now;
+        this.drawPlaying();
+      }
+      return;
+    }
     const gridX = Math.floor((pointer.x - BOARD.x) / BOARD.cell);
     const gridY = Math.floor((pointer.y - BOARD.y) / BOARD.cell);
     if (gridX < 0 || gridY < 0 || gridX >= BOARD.cols || gridY >= BOARD.rows) return;
@@ -193,7 +207,7 @@ export default class MirrorPartyScene extends Phaser.Scene {
       return;
     }
     if (this.moveLimitManager.isOutOfMoves(this.turnRotations, this.maxMoves)) {
-      this.finishTurn(false);
+      this.finishTurn(Boolean(this.currentResult?.reachedGoal));
       return;
     }
     mirror.type = toggleMirrorType(mirror.type);
@@ -205,7 +219,9 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.reactionBorn = this.time.now;
     this.drawPlaying();
     if (this.currentResult.reachedGoal) {
-      this.lockTurnAndFinish(300, true);
+      this.reactionText = 'FINISHで終了';
+      this.reactionBorn = this.time.now;
+      this.drawPlaying();
     } else if (this.moveLimitManager.isOutOfMoves(this.turnRotations, this.maxMoves)) {
       this.lockTurnAndFinish(220, false);
     }
@@ -255,7 +271,6 @@ export default class MirrorPartyScene extends Phaser.Scene {
     this.showHelpOverlay = false;
     this.helpPageIndex = 0;
     this.lastCountdownSecond = null;
-    this.feverPlayed = false;
     this.reactionText = '鏡をクリック!';
     this.reactionBorn = this.time.now;
     this.currentDramaState = null;
@@ -300,6 +315,58 @@ export default class MirrorPartyScene extends Phaser.Scene {
       cleared: this.currentResult?.reachedGoal ?? false,
     }) ?? null;
   }
+
+  getCurrentScorePreview() {
+    if (!this.currentResult || !this.currentStage) return { score: 0, breakdown: {}, movesLeft: 0 };
+    const elapsed = (this.time.now - this.startTime) / 1000;
+    const liveRanking = [...this.players].sort((a, b) => b.totalScore - a.totalScore);
+    const rankIndex = liveRanking.findIndex((item) => item.index === this.currentPlayerIndex);
+    const resultContext = TurnResultContext.create(this.currentResult);
+    const cleared = Boolean(this.currentResult.reachedGoal);
+    const liveScore = this.liveTwistManager?.getLiveScore({
+      result: resultContext.scoreResult,
+      now: this.time.now,
+      cleared,
+    }) ?? { value: 0 };
+    const boardScore = this.movingBoardDirector?.getDynamicScore({
+      result: resultContext.scoreResult,
+      cleared,
+    }) ?? { value: 0 };
+    const dramaState = this.puzzleDramaDirector.evaluate({
+      result: resultContext.scoreResult,
+      rotations: this.turnRotations,
+      maxMoves: this.maxMoves,
+      cleared,
+    });
+    const ruleState = this.roundRuleDirector.evaluate({
+      rule: this.currentRoundRule,
+      result: resultContext.scoreResult,
+      rotations: this.turnRotations,
+      maxMoves: this.maxMoves,
+      cleared,
+    });
+    return calculateScore({
+      stage: this.currentStage,
+      result: resultContext.scoreResult,
+      rotations: this.turnRotations,
+      remaining: this.remaining,
+      elapsed,
+      stageSeconds: this.stageSeconds,
+      cleared,
+      event: this.currentEvent,
+      rankIndex,
+      maxMoves: this.maxMoves,
+      liveBonus: liveScore.value + boardScore.value + dramaState.bonus,
+      roundRuleBonus: ruleState.bonus,
+    });
+  }
+
+  getMaxTurnScore() {
+    const liveRanking = [...this.players].sort((a, b) => b.totalScore - a.totalScore);
+    const rankIndex = liveRanking.findIndex((item) => item.index === this.currentPlayerIndex);
+    return estimateMaxScore({ stage: this.currentStage, event: this.currentEvent, rankIndex });
+  }
+
   lockTurnAndFinish(delayMs, cleared) {
     if (this.turnClosing) return;
     this.turnClosing = true;
@@ -370,6 +437,13 @@ export default class MirrorPartyScene extends Phaser.Scene {
     if (this.currentResult.ghosts > 0 || this.currentResult.chaserHit) this.audio.playGhost();
     this.showHandoff();
   }
+  exitToTitle() {
+    this.handoffAutoCall?.remove(false);
+    this.handoffAutoCall = null;
+    this.audio?.stopBgm?.();
+    this.onExit?.();
+  }
+
   finishGame() {
     this.handoffAutoCall?.remove(false);
     this.handoffAutoCall = null;

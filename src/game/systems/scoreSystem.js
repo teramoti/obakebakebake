@@ -2,31 +2,53 @@
  * 1ターン分の得点計算を担当します。
  * CLEAR、MISSION、水晶、色ライト、ボーナス門、MOVE残数などを小さい整数点として集計します。
  */
-export function checkMission({ stage, result, rotations, elapsed, stageSeconds, isPerfect }) {
+export function checkMission({ stage, result, rotations, remaining, elapsed, stageSeconds, isPerfect }) {
   if (stage.missionType === 'crystals') return result.crystals >= Math.min(2, stage.crystals.length);
   if (stage.missionType === 'portal') return result.usedPortal;
   if (stage.missionType === 'noGhost') return result.ghosts === 0;
   if (stage.missionType === 'lowRotate') return rotations <= stage.par;
-  if (stage.missionType === 'fever') return elapsed >= stageSeconds - Math.min(8, Math.floor(stageSeconds * 0.45));
+  if (stage.missionType === 'speed') return remaining >= stageSeconds * 0.35;
   if (stage.missionType === 'perfect') return isPerfect;
-  return false;
+  return elapsed <= stageSeconds;
 }
 
-function getEventPoint({ event, cleared, result, remaining, stageSeconds, isPerfect, rankIndex, fever }) {
+function getEventPoint({ event, cleared, result, remaining, stageSeconds, isPerfect, rankIndex }) {
   if (!cleared || !event) return 0;
   if (event.id === 'crystalRush') return result.crystals > 0 ? 1 : 0;
   if (event.id === 'speedBonus') return remaining >= stageSeconds * 0.35 ? 1 : 0;
   if (event.id === 'cleanBonus') return result.ghosts === 0 ? 1 : 0;
   if (event.id === 'perfectShow') return isPerfect ? 1 : 0;
   if (event.id === 'comebackLight') return Math.min(2, Math.max(0, rankIndex));
-  if (event.id === 'feverFinale') return fever ? 2 : 0;
+  if (event.id === 'finalSprint') return remaining >= stageSeconds * 0.45 ? 2 : 0;
   return 0;
 }
 
 /**
+ * 1ターンの上限目安です。
+ * 実際の動くボーナスは配置やタイミングに左右されるため、HUDでは「目安」として表示します。
+ */
+export function estimateMaxScore({ stage, event, rankIndex = 0 }) {
+  const emitterCount = Math.max(1, stage.emitters?.length ?? 1);
+  const clear = 2;
+  const time = 1;
+  const move = 1;
+  const crystals = stage.crystals?.length ?? 0;
+  const mission = 2;
+  const perfect = 2;
+  const color = Math.max(0, emitterCount - 1);
+  const split = stage.splitters?.length ? 1 : 0;
+  const live = 4; // スポット+2、回避+1、コンボ+1の最大目安です。
+  const rule = 1;
+  const eventPoint = event?.id === 'comebackLight'
+    ? Math.min(2, Math.max(0, rankIndex))
+    : (event?.id ? (event.id === 'finalSprint' ? 2 : 1) : 0);
+  return clear + time + move + crystals + mission + perfect + color + split + live + rule + eventPoint;
+}
+
+/**
  * Small integer scoring.
- * This build keeps one clear control: click mirrors only, then score the final beam plus fair optional board bonuses.
- * Crystals, ghosts, moving spotlights, danger and combo are automatic route results.
+ * 操作は鏡クリックだけにして、最終的な光ルートから得点を決めます。
+ * パズルでは早く解けた方が有利になるよう、終盤待ちの追加点は入れません。
  */
 export function calculateScore({
   stage,
@@ -44,10 +66,8 @@ export function calculateScore({
 }) {
   const movesLeft = Math.max(0, maxMoves - rotations);
   const isPerfect = cleared && result.crystals === stage.crystals.length && result.ghosts === 0 && rotations <= stage.par;
-  const mission = cleared && checkMission({ stage, result, rotations, elapsed, stageSeconds, isPerfect });
-  const feverWindow = Math.min(8, Math.max(3, Math.floor(stageSeconds * 0.42)));
-  const fever = cleared && remaining <= feverWindow;
-  const eventPoint = getEventPoint({ event, cleared, result, remaining, stageSeconds, isPerfect, rankIndex, fever });
+  const mission = cleared && checkMission({ stage, result, rotations, remaining, elapsed, stageSeconds, isPerfect });
+  const eventPoint = getEventPoint({ event, cleared, result, remaining, stageSeconds, isPerfect, rankIndex });
 
   const breakdown = {
     clear: cleared ? 2 : 0,
@@ -56,7 +76,6 @@ export function calculateScore({
     crystals: result.crystals,
     mission: mission ? 2 : 0,
     perfect: isPerfect ? 2 : 0,
-    fever: fever ? 1 : 0,
     event: eventPoint,
     live: liveBonus,
     rule: roundRuleBonus,
@@ -71,7 +90,6 @@ export function calculateScore({
     score: Math.max(0, score),
     isPerfect,
     mission,
-    fever,
     breakdown,
     eventLabel: event?.shortLabel ?? '',
     movesLeft,
